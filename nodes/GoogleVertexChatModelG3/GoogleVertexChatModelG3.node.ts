@@ -1,4 +1,4 @@
-import { ChatVertexAI, type ChatVertexAIInput } from '@langchain/google-vertexai';
+import { ChatVertexAI } from '@langchain/google-vertexai';
 import {
 	NodeConnectionTypes,
 	NodeOperationError,
@@ -11,6 +11,7 @@ import {
 import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { gcpProjectsList } from '../shared/gcpProjects';
 import { modelNameField, projectIdField, thinkingLevelField } from '../shared/modelFields';
+import { buildChatVertexConfig } from './buildModel';
 
 export class GoogleVertexChatModelG3 implements INodeType {
 	description: INodeTypeDescription = {
@@ -111,26 +112,22 @@ export class GoogleVertexChatModelG3 implements INodeType {
 		const options = this.getNodeParameter('options', itemIndex, {}) as Record<string, unknown>;
 
 		try {
-			const modelConfig: ChatVertexAIInput = {
-				authOptions: {
-					projectId,
-					credentials: { client_email: email, private_key: privateKey },
+			const modelConfig = buildChatVertexConfig({
+				email,
+				privateKey,
+				projectId,
+				region,
+				modelName,
+				options: {
+					temperature: options.temperature as number | undefined,
+					topP: options.topP as number | undefined,
+					topK: options.topK as number | undefined,
+					maxOutputTokens: options.maxOutputTokens as number | undefined,
+					streaming: options.streaming as boolean | undefined,
+					thinkingLevel: options.thinkingLevel as string | undefined,
+					thinkingBudget: options.thinkingBudget as number | undefined,
 				},
-				location: region,
-				model: modelName,
-				temperature: options.temperature as number | undefined,
-				topP: options.topP as number | undefined,
-				topK: options.topK as number | undefined,
-				maxOutputTokens: options.maxOutputTokens as number | undefined,
-				streaming: Boolean(options.streaming),
-			};
-
-			// Native Gemini 3 thinking level takes precedence over the raw budget.
-			if (options.thinkingLevel) {
-				modelConfig.thinkingLevel = options.thinkingLevel as ChatVertexAIInput['thinkingLevel'];
-			} else if (options.thinkingBudget !== undefined) {
-				modelConfig.thinkingBudget = options.thinkingBudget as number;
-			}
+			});
 
 			const model = new ChatVertexAI(modelConfig);
 			return { response: model };

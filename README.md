@@ -42,7 +42,38 @@ API restriction); the action node validates this and errors clearly.
 ```bash
 npm install --ignore-scripts   # eslint-plugin-n8n-nodes-base has a pnpm-only preinstall guard
 npm run build
-npm test
+npm test                       # unit tests — mocked, no network
 ```
 
 Requires Node.js 20+.
+
+## Live integration tests
+
+`npm run test:integration` exercises both nodes against the real Vertex AI
+API and verifies the parameters the nodes send actually take effect in
+Google's response. It needs a GCP service-account key:
+
+```bash
+export GCP_KEY_FILE=/absolute/path/to/service-account.json
+# optional overrides:
+export GCP_PROJECT_ID=my-project     # defaults to project_id in the key file
+export GCP_LOCATION=us-central1      # default
+export GEMINI_MODEL=gemini-3-pro-preview  # default
+npm run test:integration
+```
+
+Without `GCP_KEY_FILE` the suites skip themselves, so a normal `npm test`
+never makes network calls. These tests make billable API calls.
+
+What is verified against the live response:
+
+| Parameter | Verified via |
+| --- | --- |
+| `thinkingLevel` (MINIMAL→HIGH) | `usageMetadata.thoughtsTokenCount` scales up (action node); `usage_metadata.output_token_details.reasoning` (sub-node) |
+| `includeThoughts` | a response part with `thought: true` |
+| Google Search grounding | `candidates[].groundingMetadata` present |
+| `responseSchema` | output parses as schema-shaped JSON |
+| `maxOutputTokens` | `finishReason === 'MAX_TOKENS'` |
+| `systemInstruction` | model obeys the instruction |
+| streaming | `generateContentStream` / `.stream()` yields chunks |
+| `temperature` / `topP` / `topK` | accepted without error (Google does not echo these back) |
