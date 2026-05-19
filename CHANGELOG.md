@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
-## [0.2.1] - 2026-05-19
+## [0.2.2] - 2026-05-19
 
 First published release.
 
@@ -39,5 +39,4 @@ First published release.
 
 ### Notes
 
-- `0.1.0` and `0.2.0` were unpublished development baselines and were never
-  released; `0.2.1` is the first version published to npm.
+- `0.1.0`–`0.2.1` were earlier development versions; `0.2.2` supersedes them.
