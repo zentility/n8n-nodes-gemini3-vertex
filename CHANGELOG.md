@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
-## [0.2.2] - 2026-05-19
+## [0.2.3] - 2026-05-19
 
 First published release.
 
@@ -34,9 +34,12 @@ First published release.
 
 - Pinned `@langchain/google-vertexai` to `2.1.24` to match n8n's own runtime
   and avoid duplicate-`@langchain/core` conflicts.
-- Upgraded `@google/genai` to `2.4.0` and `@google-cloud/resource-manager` to
-  `6.2.2` (the latter clears five transitive vulnerabilities).
+- Upgraded `@google/genai` to `2.4.0`.
+- Pinned `@google-cloud/resource-manager` to `5.3.1`. Its 6.x line ships a
+  nested `gaxios` subtree that n8n's community-node loader fails to resolve
+  (`ENOENT ... gaxios/build/src/index.js`); 5.3.1 loads reliably, at the cost
+  of five low-severity transitive advisories.
 
 ### Notes
 
-- `0.1.0`–`0.2.1` were earlier development versions; `0.2.2` supersedes them.
+- `0.1.0`–`0.2.2` were earlier development versions; `0.2.3` supersedes them.
