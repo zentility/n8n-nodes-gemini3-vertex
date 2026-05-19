@@ -34,6 +34,11 @@ AI model catalogue (`ai.models.list`, base models, filtered to Gemini) for the
 selected project and region, so it never goes stale — or switch to *ID* to type
 a model name directly.
 
+**Leave the Model field empty** and the node auto-resolves the **latest flash
+model** at run time — it queries the live catalogue and picks the highest
+Gemini version of `gemini-<version>-flash` (excluding flash-lite and non-chat
+flash variants). No hardcoded model, nothing to keep updating.
+
 ## Feature placement
 
 - The sub-node forwards the native thinking level and thinking budget through

@@ -11,7 +11,7 @@ import {
 import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { gcpProjectsList } from '../shared/gcpProjects';
 import { modelNameField, projectIdField, thinkingLevelField } from '../shared/modelFields';
-import { modelSearch } from '../shared/modelSearch';
+import { modelSearch, resolveLatestFlash } from '../shared/modelSearch';
 import { buildSafetySettings, safetySettingsField } from '../shared/safetySettings';
 import { thinkingLevelSearch } from '../shared/thinkingLevelSearch';
 import { buildChatVertexConfig } from './buildModel';
@@ -109,15 +109,26 @@ export class GoogleVertexChatModelG3 implements INodeType {
 		)) as unknown as GoogleApiCredential;
 		const { email, privateKey, region } = buildAuth(credentials);
 
-		const modelName = this.getNodeParameter('modelName', itemIndex, '', {
+		const projectId = this.getNodeParameter('projectId', itemIndex, '', {
 			extractValue: true,
 		}) as string;
-		const projectId = this.getNodeParameter('projectId', itemIndex, '', {
+		let modelName = this.getNodeParameter('modelName', itemIndex, '', {
 			extractValue: true,
 		}) as string;
 		const thinkingLevel = this.getNodeParameter('thinkingLevel', itemIndex, '', {
 			extractValue: true,
 		}) as string;
+
+		if (!modelName) {
+			modelName =
+				(await resolveLatestFlash({ email, privateKey, projectId, region })) ?? '';
+			if (!modelName) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'Could not resolve a flash model from the Vertex catalogue. Set the Model explicitly.',
+				);
+			}
+		}
 		const safetySettings = buildSafetySettings(
 			this.getNodeParameter('safetySettings.values', itemIndex, {}) as Record<string, unknown>,
 		);

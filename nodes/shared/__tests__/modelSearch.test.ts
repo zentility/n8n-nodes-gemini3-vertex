@@ -1,4 +1,48 @@
-import { toModelResults } from '../modelSearch';
+import { pickLatestFlash, toModelResults } from '../modelSearch';
+
+const m = (id: string) => ({ name: `publishers/google/models/${id}` });
+
+describe('pickLatestFlash', () => {
+	it('picks the highest Gemini version flash model', () => {
+		const picked = pickLatestFlash([
+			m('gemini-2.5-flash'),
+			m('gemini-3.1-flash'),
+			m('gemini-3-flash'),
+		]);
+		expect(picked).toBe('gemini-3.1-flash');
+	});
+
+	it('excludes flash-lite', () => {
+		const picked = pickLatestFlash([m('gemini-3.1-flash-lite'), m('gemini-3-flash')]);
+		expect(picked).toBe('gemini-3-flash');
+	});
+
+	it('excludes non-chat flash variants (image/audio/tts)', () => {
+		const picked = pickLatestFlash([
+			m('gemini-3.1-flash-image'),
+			m('gemini-3.1-flash-tts'),
+			m('gemini-2.5-flash'),
+		]);
+		expect(picked).toBe('gemini-2.5-flash');
+	});
+
+	it('prefers a stable release over preview at the same version', () => {
+		const picked = pickLatestFlash([
+			m('gemini-3.1-flash-preview-11-2025'),
+			m('gemini-3.1-flash'),
+		]);
+		expect(picked).toBe('gemini-3.1-flash');
+	});
+
+	it('still returns a preview flash if that is the newest available', () => {
+		const picked = pickLatestFlash([m('gemini-2.5-flash'), m('gemini-3.1-flash-preview')]);
+		expect(picked).toBe('gemini-3.1-flash-preview');
+	});
+
+	it('ignores pro models and returns undefined when no flash model exists', () => {
+		expect(pickLatestFlash([m('gemini-3.1-pro'), m('imagen-3')])).toBeUndefined();
+	});
+});
 
 const sample = [
 	{ name: 'publishers/google/models/gemini-3-pro-preview', displayName: 'Gemini 3 Pro' },

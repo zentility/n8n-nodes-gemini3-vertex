@@ -22,9 +22,9 @@ export const modelNameField: INodeProperties = {
 	displayName: 'Model',
 	name: 'modelName',
 	type: 'resourceLocator',
-	default: { mode: 'list', value: 'gemini-3.1-pro' },
-	required: true,
-	description: 'The Gemini model to use. Pick from the live list or enter an ID.',
+	default: { mode: 'list', value: '' },
+	description:
+		'The Gemini model to use. Leave empty to auto-use the latest flash model from the live catalogue; or pick from the list / enter an ID.',
 	modes: [
 		{
 			displayName: 'From List',
@@ -36,7 +36,7 @@ export const modelNameField: INodeProperties = {
 			displayName: 'ID',
 			name: 'id',
 			type: 'string',
-			placeholder: 'gemini-3.1-pro',
+			placeholder: 'Leave empty for the latest flash model',
 		},
 	],
 };

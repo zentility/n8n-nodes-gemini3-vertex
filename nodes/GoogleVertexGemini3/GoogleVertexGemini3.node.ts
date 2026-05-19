@@ -16,7 +16,7 @@ import {
 	projectIdField,
 	thinkingLevelField,
 } from '../shared/modelFields';
-import { modelSearch } from '../shared/modelSearch';
+import { modelSearch, resolveLatestFlash } from '../shared/modelSearch';
 import { buildSafetySettings, safetySettingsField } from '../shared/safetySettings';
 import { thinkingLevelSearch } from '../shared/thinkingLevelSearch';
 import {
@@ -164,14 +164,27 @@ export class GoogleVertexGemini3 implements INodeType {
 		)) as unknown as GoogleApiCredential;
 		const { email, privateKey, region } = buildAuth(credentials);
 
+		let resolvedFlash: string | undefined;
+
 		for (let i = 0; i < items.length; i++) {
 			try {
 				const projectId = this.getNodeParameter('projectId', i, '', {
 					extractValue: true,
 				}) as string;
-				const modelName = this.getNodeParameter('modelName', i, '', {
+				let modelName = this.getNodeParameter('modelName', i, '', {
 					extractValue: true,
 				}) as string;
+
+				if (!modelName) {
+					resolvedFlash ??= await resolveLatestFlash({ email, privateKey, projectId, region });
+					if (!resolvedFlash) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Could not resolve a flash model from the Vertex catalogue. Set the Model explicitly.',
+						);
+					}
+					modelName = resolvedFlash;
+				}
 				const thinkingLevel = this.getNodeParameter('thinkingLevel', i, '', {
 					extractValue: true,
 				}) as string;
