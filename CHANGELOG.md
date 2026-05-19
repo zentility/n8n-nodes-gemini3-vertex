@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] - 2026-05-19
+
+### Fixed
+
+- The **Google Vertex Chat Model (Gemini 3)** sub-node now reports each LLM
+  call's input and output in the n8n execution log. It attaches a tracing
+  callback — `N8nTracing`, a dependency-free port of n8n's own
+  `N8nNonEstimatingTracing`. Previously the sub-node returned a bare model
+  with no callback, so n8n had nothing to display for it during a run.
+
 ## [0.2.3] - 2026-05-19
 
 First published release.

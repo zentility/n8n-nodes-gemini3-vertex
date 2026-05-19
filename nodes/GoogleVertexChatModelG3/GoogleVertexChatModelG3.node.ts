@@ -12,6 +12,7 @@ import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { gcpProjectsList } from '../shared/gcpProjects';
 import { modelNameField, projectIdField, thinkingLevelField } from '../shared/modelFields';
 import { modelSearch, resolveLatestFlash } from '../shared/modelSearch';
+import { N8nTracing } from '../shared/n8nTracing';
 import { buildSafetySettings, safetySettingsField } from '../shared/safetySettings';
 import { thinkingLevelSearch } from '../shared/thinkingLevelSearch';
 import { buildChatVertexConfig } from './buildModel';
@@ -152,6 +153,9 @@ export class GoogleVertexChatModelG3 implements INodeType {
 					safetySettings,
 				},
 			});
+
+			// Surfaces each LLM call's input/output in the n8n execution log.
+			modelConfig.callbacks = [new N8nTracing(this)];
 
 			const model = new ChatVertexAI(modelConfig);
 			return { response: model };
