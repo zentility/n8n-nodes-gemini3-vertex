@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@google-cloud/resource-manager": "^6.2.2",
-    "@google/genai": "^1.0.0",
+    "@google/genai": "^2.4.0",
     "@langchain/google-vertexai": "2.1.24"
   },
   "devDependencies": {
