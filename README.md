@@ -5,10 +5,11 @@ n8n community nodes that expose Gemini 3 features for Google Vertex AI.
 ## Nodes
 
 - **Google Vertex Chat Model (Gemini 3)** — a Chat Model sub-node for Agents
-  and Chains. Adds reasoning effort, a thinking budget, and a streaming toggle.
+  and Chains. Adds the native Gemini 3 thinking level
+  (`MINIMAL`/`LOW`/`MEDIUM`/`HIGH`), a thinking budget, and a streaming toggle.
 - **Google Vertex Gemini 3** — an action node with a *Message a Model*
-  operation. Adds the native Gemini 3 thinking level, thought summaries,
-  Google Search grounding, and structured JSON output.
+  operation. Adds the native thinking level, thought summaries, Google Search
+  grounding, and structured JSON output.
 
 ## Installation
 
@@ -22,13 +23,12 @@ with the Vertex AI API enabled (email, private key, region).
 
 ## Feature placement
 
-Some Gemini 3 features are not reachable through the LangChain layer the
-Chat Model sub-node is built on (`@langchain/google-vertexai`):
-
-- **Native thinking level** (`MINIMAL` / `LOW` / `MEDIUM` / `HIGH`) and
-  **thought summaries** — available on the **action node** only. The sub-node
-  offers `reasoningEffort` (low/medium/high) and a numeric thinking budget,
-  which is what LangChain forwards to the API.
+- The sub-node forwards the native thinking level and thinking budget through
+  `@langchain/google-vertexai` (pinned to `2.1.24`, matching the version n8n
+  itself ships, to avoid duplicate-`@langchain/core` runtime conflicts).
+- **Thought summaries** as an independent toggle live on the **action node**.
+  The sub-node's LangChain layer couples thought inclusion to the thinking
+  budget rather than exposing a separate switch.
 
 ## Caveat: grounding & JSON output
 

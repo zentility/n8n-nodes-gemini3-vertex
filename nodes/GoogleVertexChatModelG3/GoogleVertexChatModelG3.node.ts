@@ -10,7 +10,7 @@ import {
 
 import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { gcpProjectsList } from '../shared/gcpProjects';
-import { modelNameField, projectIdField } from '../shared/modelFields';
+import { modelNameField, projectIdField, thinkingLevelField } from '../shared/modelFields';
 
 export class GoogleVertexChatModelG3 implements INodeType {
 	description: INodeTypeDescription = {
@@ -52,20 +52,6 @@ export class GoogleVertexChatModelG3 implements INodeType {
 						description: 'The maximum number of tokens to generate in the completion',
 					},
 					{
-						displayName: 'Reasoning Effort',
-						name: 'reasoningEffort',
-						type: 'options',
-						default: '',
-						description:
-							'How much the model reasons before answering. Takes precedence over Thinking Budget. For the native Gemini 3 thinking level (including Minimal) and thought summaries, use the Google Vertex Gemini 3 action node.',
-						options: [
-							{ name: 'Default (Unset)', value: '' },
-							{ name: 'Low', value: 'low' },
-							{ name: 'Medium', value: 'medium' },
-							{ name: 'High', value: 'high' },
-						],
-					},
-					{
 						displayName: 'Sampling Temperature',
 						name: 'temperature',
 						type: 'number',
@@ -85,9 +71,10 @@ export class GoogleVertexChatModelG3 implements INodeType {
 						type: 'number',
 						default: -1,
 						description:
-							'Reasoning-token budget. Set to 0 to disable thinking, -1 for dynamic. Ignored when Reasoning Effort is set.',
+							'Reasoning-token budget. Set to 0 to disable thinking, -1 for dynamic. Ignored when Thinking Level is set.',
 						typeOptions: { minValue: -1, numberPrecision: 0 },
 					},
+					thinkingLevelField,
 					{
 						displayName: 'Top K',
 						name: 'topK',
@@ -138,9 +125,9 @@ export class GoogleVertexChatModelG3 implements INodeType {
 				streaming: Boolean(options.streaming),
 			};
 
-			// Reasoning Effort takes precedence over the raw Thinking Budget.
-			if (options.reasoningEffort) {
-				modelConfig.reasoningEffort = options.reasoningEffort as 'low' | 'medium' | 'high';
+			// Native Gemini 3 thinking level takes precedence over the raw budget.
+			if (options.thinkingLevel) {
+				modelConfig.thinkingLevel = options.thinkingLevel as ChatVertexAIInput['thinkingLevel'];
 			} else if (options.thinkingBudget !== undefined) {
 				modelConfig.thinkingBudget = options.thinkingBudget as number;
 			}

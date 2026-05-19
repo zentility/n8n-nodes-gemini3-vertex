@@ -62,24 +62,26 @@ Carried over unchanged from the original node:
 
 New Gemini 3 options added to the Options collection:
 
-- **Thinking Level** — dropdown using Google's documented `thinking_level`
-  enum for Gemini 3 (`low`/`high`, or `minimal`/`low`/`medium`/`high` if
-  Google has expanded it; exact enum pinned during implementation against
-  the live API docs). When set, it takes precedence over `thinkingBudget`;
-  if both are supplied the node surfaces a notice and uses `thinkingLevel`.
-- **Include Thought Summaries** — boolean, requests `includeThoughts`.
+- **Thinking Level** — dropdown with the native `ThinkingLevel` enum
+  (`MINIMAL` / `LOW` / `MEDIUM` / `HIGH`). Passed as the `ChatVertexAI`
+  `thinkingLevel` constructor param. Takes precedence over `thinkingBudget`.
 - **Streaming** — boolean, sets the `ChatVertexAI` `streaming` constructor flag.
 
 Grounding and JSON-schema output are intentionally **not** on this node — they
 conflict with how n8n Agents bind their own tools. They live on the action node.
 
-### Implementation caveat
+### Dependency alignment
 
-`@langchain/google-vertexai` exposes `thinkingBudget` today; `thinkingLevel`
-and `includeThoughts` support depends on the installed version. The
-implementation must verify the installed version forwards these to the API
-(`generationConfig`). If a feature genuinely cannot reach the API through
-LangChain, document it as action-node-only rather than silently dropping it.
+`@langchain/google-vertexai` is pinned to `2.1.24` — the version n8n itself
+ships — so the model object the sub-node returns shares one `@langchain/core`
+instance with n8n's Agent runtime (a mismatched major version causes
+duplicate-core failures). `2.1.x` supports `thinkingLevel` as a first-class
+constructor param.
+
+In `2.1.x` the connector couples `includeThoughts` to the thinking budget
+rather than exposing it independently, so a standalone **Include Thought
+Summaries** toggle lives only on the action node, which calls `@google/genai`
+directly.
 
 ## Node 2 — Action node (`GoogleVertexGemini3`)
 
