@@ -1,7 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-export const DEFAULT_MODEL = 'gemini-3-pro-preview';
-
 // thinking_level enum values match @google/genai's ThinkingLevel enum.
 export const thinkingLevelOptions = [
 	{ name: 'Minimal', value: 'MINIMAL' },
@@ -29,11 +27,26 @@ export const projectIdField: INodeProperties = {
 };
 
 export const modelNameField: INodeProperties = {
-	displayName: 'Model Name',
+	displayName: 'Model',
 	name: 'modelName',
-	type: 'string',
-	default: DEFAULT_MODEL,
-	description: 'The Gemini model to use, e.g. gemini-3-pro-preview',
+	type: 'resourceLocator',
+	default: { mode: 'list', value: '' },
+	required: true,
+	description: 'The Gemini model to use. Pick from the live list or enter an ID.',
+	modes: [
+		{
+			displayName: 'From List',
+			name: 'list',
+			type: 'list',
+			typeOptions: { searchListMethod: 'modelSearch' },
+		},
+		{
+			displayName: 'ID',
+			name: 'id',
+			type: 'string',
+			placeholder: 'gemini-3-pro-preview',
+		},
+	],
 };
 
 export const thinkingLevelField: INodeProperties = {

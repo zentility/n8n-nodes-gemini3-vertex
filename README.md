@@ -21,6 +21,13 @@ In n8n: **Settings → Community Nodes → Install** and enter
 Both nodes use the built-in **Google API** credential — a GCP service account
 with the Vertex AI API enabled (email, private key, region).
 
+## Model selection
+
+The **Model** field is a resource locator: *From List* queries the live Vertex
+AI model catalogue (`ai.models.list`, base models, filtered to Gemini) for the
+selected project and region, so it never goes stale — or switch to *ID* to type
+a model name directly.
+
 ## Feature placement
 
 - The sub-node forwards the native thinking level and thinking budget through

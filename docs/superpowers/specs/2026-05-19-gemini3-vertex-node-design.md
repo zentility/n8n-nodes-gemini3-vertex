@@ -54,7 +54,8 @@ Display name: **Google Vertex Chat Model (Gemini 3)**. Output:
 Carried over unchanged from the original node:
 
 - `googleApi` credential, `projectId` resourceLocator with `gcpProjectsList`
-  search, free-text model name field (default a Gemini 3 model).
+  search, and a Model resource locator (live `modelSearch` dropdown backed
+  by `ai.models.list`, plus a free-text ID mode).
 - Options: temperature, topP, topK, maxOutputTokens, safety settings,
   legacy `thinkingBudget`.
 - `onFailedAttempt` handler and the "Unsupported model" / "Invalid options"

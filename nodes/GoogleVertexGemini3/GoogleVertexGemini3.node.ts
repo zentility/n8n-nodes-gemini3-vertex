@@ -10,6 +10,7 @@ import {
 import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { describeVertexError } from '../shared/errors';
 import { gcpProjectsList } from '../shared/gcpProjects';
+import { modelSearch } from '../shared/modelSearch';
 import {
 	includeThoughtsField,
 	modelNameField,
@@ -148,7 +149,7 @@ export class GoogleVertexGemini3 implements INodeType {
 	};
 
 	methods = {
-		listSearch: { gcpProjectsList },
+		listSearch: { gcpProjectsList, modelSearch },
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -165,7 +166,9 @@ export class GoogleVertexGemini3 implements INodeType {
 				const projectId = this.getNodeParameter('projectId', i, '', {
 					extractValue: true,
 				}) as string;
-				const modelName = this.getNodeParameter('modelName', i) as string;
+				const modelName = this.getNodeParameter('modelName', i, '', {
+					extractValue: true,
+				}) as string;
 				const systemInstruction = this.getNodeParameter('systemInstruction', i, '') as string;
 				const stream = this.getNodeParameter('stream', i, false) as boolean;
 				const responseFormat = this.getNodeParameter('responseFormat', i, 'text') as

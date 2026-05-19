@@ -11,6 +11,7 @@ import {
 import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { gcpProjectsList } from '../shared/gcpProjects';
 import { modelNameField, projectIdField, thinkingLevelField } from '../shared/modelFields';
+import { modelSearch } from '../shared/modelSearch';
 import { buildChatVertexConfig } from './buildModel';
 
 export class GoogleVertexChatModelG3 implements INodeType {
@@ -96,7 +97,7 @@ export class GoogleVertexChatModelG3 implements INodeType {
 	};
 
 	methods = {
-		listSearch: { gcpProjectsList },
+		listSearch: { gcpProjectsList, modelSearch },
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
@@ -105,7 +106,9 @@ export class GoogleVertexChatModelG3 implements INodeType {
 		)) as unknown as GoogleApiCredential;
 		const { email, privateKey, region } = buildAuth(credentials);
 
-		const modelName = this.getNodeParameter('modelName', itemIndex) as string;
+		const modelName = this.getNodeParameter('modelName', itemIndex, '', {
+			extractValue: true,
+		}) as string;
 		const projectId = this.getNodeParameter('projectId', itemIndex, '', {
 			extractValue: true,
 		}) as string;
