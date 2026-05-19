@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
-    "lint": "eslint nodes package.json",
+    "lint": "eslint --ext .ts nodes",
     "test": "jest"
   },
   "files": ["dist"],

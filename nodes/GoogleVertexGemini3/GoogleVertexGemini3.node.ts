@@ -1,6 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
 import {
-	NodeConnectionTypes,
 	NodeOperationError,
 	type IExecuteFunctions,
 	type INodeExecutionData,
@@ -33,8 +32,8 @@ export class GoogleVertexGemini3 implements INodeType {
 		version: 1,
 		description: 'Send messages to Gemini 3 on Google Vertex AI',
 		defaults: { name: 'Google Vertex Gemini 3' },
-		inputs: [NodeConnectionTypes.Main],
-		outputs: [NodeConnectionTypes.Main],
+		inputs: ['main'],
+		outputs: ['main'],
 		credentials: [{ name: 'googleApi', required: true }],
 		properties: [
 			projectIdField,
@@ -106,6 +105,15 @@ export class GoogleVertexGemini3 implements INodeType {
 				default: {},
 				options: [
 					{
+						displayName: 'Enable Google Search Grounding',
+						name: 'enableGrounding',
+						type: 'boolean',
+						default: false,
+						description:
+							'Whether to let the model ground answers in live Google Search results',
+					},
+					includeThoughtsField,
+					{
 						displayName: 'Maximum Number of Tokens',
 						name: 'maxOutputTokens',
 						type: 'number',
@@ -119,13 +127,7 @@ export class GoogleVertexGemini3 implements INodeType {
 						default: 1,
 						description: 'Controls randomness of the output',
 					},
-					{
-						displayName: 'Top P',
-						name: 'topP',
-						type: 'number',
-						default: 0.95,
-						description: 'Controls diversity via nucleus sampling',
-					},
+					thinkingLevelField,
 					{
 						displayName: 'Top K',
 						name: 'topK',
@@ -133,15 +135,12 @@ export class GoogleVertexGemini3 implements INodeType {
 						default: 40,
 						description: 'Limits sampling to the K most likely tokens',
 					},
-					thinkingLevelField,
-					includeThoughtsField,
 					{
-						displayName: 'Enable Google Search Grounding',
-						name: 'enableGrounding',
-						type: 'boolean',
-						default: false,
-						description:
-							'Whether to let the model ground answers in live Google Search results',
+						displayName: 'Top P',
+						name: 'topP',
+						type: 'number',
+						default: 0.95,
+						description: 'Controls diversity via nucleus sampling',
 					},
 				],
 			},
