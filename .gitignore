@@ -1,3 +1,24 @@
+# Dependencies & build output
 node_modules/
 dist/
+
+# Logs
 *.log
+
+# Packaged tarballs (npm pack / npm publish)
+*.tgz
+
+# OS / editor cruft
+.DS_Store
+
+# Test coverage
+coverage/
+
+# Secrets — never commit credentials or service-account keys
+.env
+.env.*
+service-account*.json
+*-key.json
+
+# Plugin-generated docs (superpowers specs/plans and similar)
+/docs/
