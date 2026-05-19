@@ -14,7 +14,7 @@ export interface IntegrationEnv {
  *   GCP_KEY_FILE   (required) path to a service-account JSON key file
  *   GCP_PROJECT_ID (optional) defaults to project_id inside the key file
  *   GCP_LOCATION   (optional) defaults to us-central1
- *   GEMINI_MODEL   (optional) defaults to gemini-3-pro-preview
+ *   GEMINI_MODEL   (optional) defaults to gemini-3.1-pro
  *
  * Returns null when no key file is configured so the suites can self-skip.
  */
@@ -38,6 +38,6 @@ export function getIntegrationEnv(): IntegrationEnv | null {
 		privateKey: raw.private_key,
 		projectId,
 		location: process.env.GCP_LOCATION ?? 'us-central1',
-		model: process.env.GEMINI_MODEL ?? 'gemini-3-pro-preview',
+		model: process.env.GEMINI_MODEL ?? 'gemini-3.1-pro',
 	};
 }

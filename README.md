@@ -71,7 +71,7 @@ export GCP_KEY_FILE=/absolute/path/to/service-account.json
 # optional overrides:
 export GCP_PROJECT_ID=my-project     # defaults to project_id in the key file
 export GCP_LOCATION=us-central1      # default
-export GEMINI_MODEL=gemini-3-pro-preview  # default
+export GEMINI_MODEL=gemini-3.1-pro        # default
 npm run test:integration
 ```
 

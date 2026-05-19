@@ -22,7 +22,7 @@ export const modelNameField: INodeProperties = {
 	displayName: 'Model',
 	name: 'modelName',
 	type: 'resourceLocator',
-	default: { mode: 'list', value: '' },
+	default: { mode: 'list', value: 'gemini-3.1-pro' },
 	required: true,
 	description: 'The Gemini model to use. Pick from the live list or enter an ID.',
 	modes: [
@@ -36,7 +36,7 @@ export const modelNameField: INodeProperties = {
 			displayName: 'ID',
 			name: 'id',
 			type: 'string',
-			placeholder: 'gemini-3-pro-preview',
+			placeholder: 'gemini-3.1-pro',
 		},
 	],
 };

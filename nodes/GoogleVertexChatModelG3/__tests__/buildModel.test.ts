@@ -5,13 +5,13 @@ const base = {
 	privateKey: '-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----',
 	projectId: 'my-project',
 	region: 'us-central1',
-	modelName: 'gemini-3-pro-preview',
+	modelName: 'gemini-3.1-pro',
 };
 
 describe('buildChatVertexConfig', () => {
 	it('maps auth, location, and model', () => {
 		const cfg = buildChatVertexConfig({ ...base, options: {} });
-		expect(cfg.model).toBe('gemini-3-pro-preview');
+		expect(cfg.model).toBe('gemini-3.1-pro');
 		expect(cfg.location).toBe('us-central1');
 		expect(cfg.authOptions?.projectId).toBe('my-project');
 		const creds = cfg.authOptions?.credentials as { client_email?: string };
