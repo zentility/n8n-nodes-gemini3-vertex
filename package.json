@@ -4,7 +4,7 @@
   "description": "n8n community nodes exposing Gemini 3 features for Google Vertex AI",
   "keywords": ["n8n-community-node-package", "n8n", "gemini", "vertex-ai"],
   "license": "MIT",
-  "author": "ctobe <ctobe@zentility.com>",
+  "author": "craig <craig2005@gmail.com>",
   "main": "index.js",
   "scripts": {
     "build": "tsc && gulp build:icons",
