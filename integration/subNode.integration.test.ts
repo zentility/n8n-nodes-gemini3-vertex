@@ -1,6 +1,7 @@
 import { ChatVertexAI } from '@langchain/google-vertexai';
 
 import { buildChatVertexConfig } from '../nodes/GoogleVertexChatModelG3/buildModel';
+import { buildSafetySettings } from '../nodes/shared/safetySettings';
 import { getIntegrationEnv } from './helpers';
 
 const env = getIntegrationEnv();
@@ -55,6 +56,17 @@ describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
 		console.log(`[integration] sub-node reasoning tokens  MINIMAL=${minimal}  HIGH=${high}`);
 		expect(high).toBeGreaterThan(0);
 		expect(high).toBeGreaterThanOrEqual(minimal);
+	});
+
+	it('accepts per-category safety settings', async () => {
+		const safetySettings = buildSafetySettings({
+			harassment: 'BLOCK_ONLY_HIGH',
+			hateSpeech: 'BLOCK_NONE',
+		});
+		expect(safetySettings).toHaveLength(2);
+		const model = makeModel({ maxOutputTokens: 64, safetySettings });
+		const result = await model.invoke('Reply with a short greeting.');
+		expect((result.content as string).length).toBeGreaterThan(0);
 	});
 
 	it('streams chunks when streaming is enabled', async () => {

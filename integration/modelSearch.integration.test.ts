@@ -1,6 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 
-import { toModelResults, type ModelLike } from '../nodes/shared/modelSearch';
+import {
+	resolveLatestFlash,
+	toModelResults,
+	type ModelLike,
+} from '../nodes/shared/modelSearch';
 import { getIntegrationEnv } from './helpers';
 
 const env = getIntegrationEnv();
@@ -36,5 +40,19 @@ describeLive('model listing — live Vertex AI', () => {
 		console.log(`[integration] Gemini models found: ${results.map((r) => r.value).join(', ')}`);
 		expect(results.length).toBeGreaterThan(0);
 		expect(results.every((r) => r.value.includes('gemini'))).toBe(true);
+	});
+
+	it('resolveLatestFlash returns a flash chat model (not flash-lite)', async () => {
+		const model = await resolveLatestFlash({
+			email: env!.email,
+			privateKey: env!.privateKey,
+			projectId: env!.projectId,
+			region: env!.location,
+		});
+		// eslint-disable-next-line no-console
+		console.log(`[integration] resolved latest flash model: ${model}`);
+		expect(model).toBeDefined();
+		expect(model!.toLowerCase()).toContain('flash');
+		expect(model!.toLowerCase()).not.toContain('flash-lite');
 	});
 });

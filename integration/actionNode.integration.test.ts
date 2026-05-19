@@ -5,6 +5,7 @@ import {
 	buildGenerateConfig,
 	shapeOutput,
 } from '../nodes/GoogleVertexGemini3/operations';
+import { buildSafetySettings } from '../nodes/shared/safetySettings';
 import { getIntegrationEnv } from './helpers';
 
 const env = getIntegrationEnv();
@@ -110,6 +111,23 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 		);
 		const out = shapeOutput(response as never, { responseFormat: 'json' });
 		expect(typeof (out.parsedJson as { capital?: string })?.capital).toBe('string');
+	});
+
+	it('accepts per-category safety settings', async () => {
+		// The API does not echo safety settings back, so this verifies they are
+		// accepted (no 400) and a normal response is still produced.
+		const safetySettings = buildSafetySettings({
+			harassment: 'BLOCK_ONLY_HIGH',
+			hateSpeech: 'BLOCK_NONE',
+			dangerousContent: 'BLOCK_MEDIUM_AND_ABOVE',
+		});
+		expect(safetySettings).toHaveLength(3);
+		const response = await generate(
+			userMsg('Reply with a short, friendly greeting.'),
+			buildGenerateConfig({ maxOutputTokens: 64, safetySettings }),
+		);
+		const out = shapeOutput(response as never, { responseFormat: 'text' });
+		expect(out.text.length).toBeGreaterThan(0);
 	});
 
 	it('applies the systemInstruction', async () => {

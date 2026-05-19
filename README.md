@@ -94,4 +94,6 @@ What is verified against the live response:
 | `maxOutputTokens` | `finishReason === 'MAX_TOKENS'` |
 | `systemInstruction` | model obeys the instruction |
 | streaming | `generateContentStream` / `.stream()` yields chunks |
+| latest-flash resolution | `resolveLatestFlash` returns a live `*-flash` model (not flash-lite) |
+| safety settings | accepted without error, normal response still produced |
 | `temperature` / `topP` / `topK` | accepted without error (Google does not echo these back) |
