@@ -10,7 +10,8 @@
     "dev": "tsc --watch",
     "lint": "eslint --ext .ts nodes",
     "test": "jest",
-    "test:integration": "jest --config jest.integration.config.js"
+    "test:integration": "jest --config jest.integration.config.js",
+    "prepublishOnly": "npm run build"
   },
   "files": ["dist"],
   "n8n": {
