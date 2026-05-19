@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.5] - 2026-05-19
+
+### Changed
+
+- Hardened the `N8nTracing` callback: every n8n `addInputData`/`addOutputData`
+  call is wrapped in try/catch. If a future n8n version changes that API, the
+  node loses its execution log — the workflow run itself keeps working.
+
 ## [0.2.4] - 2026-05-19
 
 ### Fixed

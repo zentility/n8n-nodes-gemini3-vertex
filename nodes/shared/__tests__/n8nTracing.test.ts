@@ -59,4 +59,27 @@ describe('N8nTracing', () => {
 		expect(ctx.addOutputData).toHaveBeenCalledTimes(1);
 		expect(ctx.addOutputData.mock.calls[0][0]).toBe(NodeConnectionTypes.AiLanguageModel);
 	});
+
+	it('swallows a failing addInputData — tracing must not break the model call', async () => {
+		const ctx = mockCtx();
+		ctx.addInputData.mockImplementation(() => {
+			throw new Error('n8n API changed');
+		});
+		const tracer = new N8nTracing(ctx as never);
+		await expect(
+			tracer.handleLLMStart({ type: 'not_implemented' } as never, ['hi'], 'run-1'),
+		).resolves.toBeUndefined();
+	});
+
+	it('swallows a failing addOutputData on both end and error paths', async () => {
+		const ctx = mockCtx();
+		ctx.addOutputData.mockImplementation(() => {
+			throw new Error('n8n API changed');
+		});
+		const tracer = new N8nTracing(ctx as never);
+		await expect(
+			tracer.handleLLMEnd({ generations: [[{ text: 'x' }]] } as never, 'run-1'),
+		).resolves.toBeUndefined();
+		await expect(tracer.handleLLMError(new Error('boom'), 'run-1')).resolves.toBeUndefined();
+	});
 });

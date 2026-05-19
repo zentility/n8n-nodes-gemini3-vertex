@@ -22,6 +22,11 @@ interface RunDetail {
  *
  * Without a handler like this, a Chat Model sub-node reports nothing to the
  * execution log — n8n only records sub-node I/O through this callback.
+ *
+ * Every n8n call is wrapped in try/catch: tracing is best-effort observability
+ * and must never break the actual model call. If a future n8n version changes
+ * the addInputData/addOutputData API, you lose the execution log for this node
+ * — not the workflow run.
  */
 export class N8nTracing extends BaseCallbackHandler {
 	name = 'N8nTracing';
@@ -47,56 +52,68 @@ export class N8nTracing extends BaseCallbackHandler {
 	}
 
 	async handleLLMStart(llm: Serialized, prompts: string[], runId: string): Promise<void> {
-		const options = llm.type === 'constructor' ? llm.kwargs : llm;
-		const { index } = this.executionFunctions.addInputData(this.connectionType, [
-			[{ json: { messages: prompts, options } }],
-		]);
-		this.runsMap[runId] = { index };
+		try {
+			const options = llm.type === 'constructor' ? llm.kwargs : llm;
+			const { index } = this.executionFunctions.addInputData(this.connectionType, [
+				[{ json: { messages: prompts, options } }],
+			]);
+			this.runsMap[runId] = { index };
+		} catch {
+			// Best-effort tracing — never let a logging failure break the model call.
+		}
 	}
 
 	async handleLLMEnd(output: LLMResult, runId: string): Promise<void> {
-		const runDetails = this.runsMap[runId] ?? { index: Object.keys(this.runsMap).length };
+		try {
+			const runDetails = this.runsMap[runId] ?? { index: Object.keys(this.runsMap).length };
 
-		const generations = output.generations.map((generation) =>
-			generation.map((item) => ({
-				text: item.text,
-				generationInfo: item.generationInfo,
-			})),
-		);
+			const generations = output.generations.map((generation) =>
+				generation.map((item) => ({
+					text: item.text,
+					generationInfo: item.generationInfo,
+				})),
+			);
 
-		const sourceNodeRunIndex =
-			this.parentRunIndex !== undefined ? this.parentRunIndex + runDetails.index : undefined;
+			const sourceNodeRunIndex =
+				this.parentRunIndex !== undefined ? this.parentRunIndex + runDetails.index : undefined;
 
-		this.executionFunctions.addOutputData(
-			this.connectionType,
-			runDetails.index,
-			[[{ json: { response: { generations } } }]],
-			undefined,
-			sourceNodeRunIndex,
-		);
-	}
-
-	async handleLLMError(error: IDataObject | Error, runId: string): Promise<void> {
-		const runDetails = this.runsMap[runId] ?? { index: Object.keys(this.runsMap).length };
-
-		// Drop non-`x-` headers so sensitive values are not logged.
-		if (typeof error === 'object' && error?.hasOwnProperty('headers')) {
-			const headers = (error as { headers: Record<string, unknown> }).headers;
-			for (const key of Object.keys(headers)) {
-				if (!key.startsWith('x-')) delete headers[key];
-			}
-		}
-
-		if (error instanceof NodeError) {
-			this.executionFunctions.addOutputData(this.connectionType, runDetails.index, error);
-		} else {
 			this.executionFunctions.addOutputData(
 				this.connectionType,
 				runDetails.index,
-				new NodeOperationError(this.executionFunctions.getNode(), error as JsonObject, {
-					functionality: 'configuration-node',
-				}),
+				[[{ json: { response: { generations } } }]],
+				undefined,
+				sourceNodeRunIndex,
 			);
+		} catch {
+			// Best-effort tracing — never let a logging failure break the model call.
+		}
+	}
+
+	async handleLLMError(error: IDataObject | Error, runId: string): Promise<void> {
+		try {
+			const runDetails = this.runsMap[runId] ?? { index: Object.keys(this.runsMap).length };
+
+			// Drop non-`x-` headers so sensitive values are not logged.
+			if (typeof error === 'object' && error?.hasOwnProperty('headers')) {
+				const headers = (error as { headers: Record<string, unknown> }).headers;
+				for (const key of Object.keys(headers)) {
+					if (!key.startsWith('x-')) delete headers[key];
+				}
+			}
+
+			if (error instanceof NodeError) {
+				this.executionFunctions.addOutputData(this.connectionType, runDetails.index, error);
+			} else {
+				this.executionFunctions.addOutputData(
+					this.connectionType,
+					runDetails.index,
+					new NodeOperationError(this.executionFunctions.getNode(), error as JsonObject, {
+						functionality: 'configuration-node',
+					}),
+				);
+			}
+		} catch {
+			// Best-effort tracing — never let a logging failure break the model call.
 		}
 	}
 }
