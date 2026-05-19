@@ -6,10 +6,16 @@ n8n community nodes that expose Gemini 3 features for Google Vertex AI.
 
 - **Google Vertex Chat Model (Gemini 3)** — a Chat Model sub-node for Agents
   and Chains. Adds the native Gemini 3 thinking level
-  (`MINIMAL`/`LOW`/`MEDIUM`/`HIGH`), a thinking budget, and a streaming toggle.
+  (`MINIMAL`/`LOW`/`MEDIUM`/`HIGH`), a thinking budget, per-category safety
+  settings, and a streaming toggle.
 - **Google Vertex Gemini 3** — an action node with a *Message a Model*
-  operation. Adds the native thinking level, thought summaries, Google Search
-  grounding, and structured JSON output.
+  operation. Adds the native thinking level, thought summaries, per-category
+  safety settings, Google Search grounding, and structured JSON output.
+
+Both **Model** and **Thinking Level** are resource locators — pick from a list
+or switch to *Expression* / *ID* mode to supply the value dynamically. Safety
+settings expose one threshold dropdown per harm category, all at once, so there
+is no per-row "add item" clicking.
 
 ## Installation
 

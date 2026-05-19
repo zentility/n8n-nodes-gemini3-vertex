@@ -1,5 +1,7 @@
 import type { ChatVertexAIInput } from '@langchain/google-vertexai';
 
+import type { SafetySetting } from '../shared/safetySettings';
+
 export interface ChatVertexConfigParams {
 	email: string;
 	privateKey: string;
@@ -14,6 +16,7 @@ export interface ChatVertexConfigParams {
 		streaming?: boolean;
 		thinkingLevel?: string;
 		thinkingBudget?: number;
+		safetySettings?: SafetySetting[];
 	};
 }
 
@@ -39,6 +42,10 @@ export function buildChatVertexConfig(params: ChatVertexConfigParams): ChatVerte
 		config.thinkingLevel = options.thinkingLevel as ChatVertexAIInput['thinkingLevel'];
 	} else if (options.thinkingBudget !== undefined) {
 		config.thinkingBudget = options.thinkingBudget;
+	}
+
+	if (options.safetySettings && options.safetySettings.length > 0) {
+		config.safetySettings = options.safetySettings as ChatVertexAIInput['safetySettings'];
 	}
 
 	return config;

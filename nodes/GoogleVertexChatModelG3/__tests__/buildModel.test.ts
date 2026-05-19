@@ -45,4 +45,19 @@ describe('buildChatVertexConfig', () => {
 			buildChatVertexConfig({ ...base, options: { streaming: true } }).streaming,
 		).toBe(true);
 	});
+
+	it('passes safety settings through when provided', () => {
+		const safetySettings = [
+			{ category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+		];
+		const cfg = buildChatVertexConfig({ ...base, options: { safetySettings } });
+		expect(cfg.safetySettings).toEqual(safetySettings);
+	});
+
+	it('omits safety settings when none are provided', () => {
+		expect(buildChatVertexConfig({ ...base, options: {} }).safetySettings).toBeUndefined();
+		expect(
+			buildChatVertexConfig({ ...base, options: { safetySettings: [] } }).safetySettings,
+		).toBeUndefined();
+	});
 });

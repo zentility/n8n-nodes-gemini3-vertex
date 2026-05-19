@@ -12,6 +12,8 @@ import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { gcpProjectsList } from '../shared/gcpProjects';
 import { modelNameField, projectIdField, thinkingLevelField } from '../shared/modelFields';
 import { modelSearch } from '../shared/modelSearch';
+import { buildSafetySettings, safetySettingsField } from '../shared/safetySettings';
+import { thinkingLevelSearch } from '../shared/thinkingLevelSearch';
 import { buildChatVertexConfig } from './buildModel';
 
 export class GoogleVertexChatModelG3 implements INodeType {
@@ -39,6 +41,8 @@ export class GoogleVertexChatModelG3 implements INodeType {
 		properties: [
 			projectIdField,
 			modelNameField,
+			thinkingLevelField,
+			safetySettingsField,
 			{
 				displayName: 'Options',
 				name: 'options',
@@ -76,7 +80,6 @@ export class GoogleVertexChatModelG3 implements INodeType {
 							'Reasoning-token budget. Set to 0 to disable thinking, -1 for dynamic. Ignored when Thinking Level is set.',
 						typeOptions: { minValue: -1, numberPrecision: 0 },
 					},
-					thinkingLevelField,
 					{
 						displayName: 'Top K',
 						name: 'topK',
@@ -97,7 +100,7 @@ export class GoogleVertexChatModelG3 implements INodeType {
 	};
 
 	methods = {
-		listSearch: { gcpProjectsList, modelSearch },
+		listSearch: { gcpProjectsList, modelSearch, thinkingLevelSearch },
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
@@ -112,6 +115,12 @@ export class GoogleVertexChatModelG3 implements INodeType {
 		const projectId = this.getNodeParameter('projectId', itemIndex, '', {
 			extractValue: true,
 		}) as string;
+		const thinkingLevel = this.getNodeParameter('thinkingLevel', itemIndex, '', {
+			extractValue: true,
+		}) as string;
+		const safetySettings = buildSafetySettings(
+			this.getNodeParameter('safetySettings.values', itemIndex, {}) as Record<string, unknown>,
+		);
 		const options = this.getNodeParameter('options', itemIndex, {}) as Record<string, unknown>;
 
 		try {
@@ -127,8 +136,9 @@ export class GoogleVertexChatModelG3 implements INodeType {
 					topK: options.topK as number | undefined,
 					maxOutputTokens: options.maxOutputTokens as number | undefined,
 					streaming: options.streaming as boolean | undefined,
-					thinkingLevel: options.thinkingLevel as string | undefined,
+					thinkingLevel,
 					thinkingBudget: options.thinkingBudget as number | undefined,
+					safetySettings,
 				},
 			});
 

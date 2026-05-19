@@ -10,13 +10,15 @@ import {
 import { buildAuth, type GoogleApiCredential } from '../shared/auth';
 import { describeVertexError } from '../shared/errors';
 import { gcpProjectsList } from '../shared/gcpProjects';
-import { modelSearch } from '../shared/modelSearch';
 import {
 	includeThoughtsField,
 	modelNameField,
 	projectIdField,
 	thinkingLevelField,
 } from '../shared/modelFields';
+import { modelSearch } from '../shared/modelSearch';
+import { buildSafetySettings, safetySettingsField } from '../shared/safetySettings';
+import { thinkingLevelSearch } from '../shared/thinkingLevelSearch';
 import {
 	aggregateStreamChunks,
 	assertNoFeatureConflict,
@@ -39,6 +41,7 @@ export class GoogleVertexGemini3 implements INodeType {
 		properties: [
 			projectIdField,
 			modelNameField,
+			thinkingLevelField,
 			{
 				displayName: 'Messages',
 				name: 'messages',
@@ -98,6 +101,7 @@ export class GoogleVertexGemini3 implements INodeType {
 				displayOptions: { show: { responseFormat: ['json'] } },
 				description: 'JSON Schema the model output must conform to',
 			},
+			safetySettingsField,
 			{
 				displayName: 'Options',
 				name: 'options',
@@ -128,7 +132,6 @@ export class GoogleVertexGemini3 implements INodeType {
 						default: 1,
 						description: 'Controls randomness of the output',
 					},
-					thinkingLevelField,
 					{
 						displayName: 'Top K',
 						name: 'topK',
@@ -149,7 +152,7 @@ export class GoogleVertexGemini3 implements INodeType {
 	};
 
 	methods = {
-		listSearch: { gcpProjectsList, modelSearch },
+		listSearch: { gcpProjectsList, modelSearch, thinkingLevelSearch },
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -169,6 +172,12 @@ export class GoogleVertexGemini3 implements INodeType {
 				const modelName = this.getNodeParameter('modelName', i, '', {
 					extractValue: true,
 				}) as string;
+				const thinkingLevel = this.getNodeParameter('thinkingLevel', i, '', {
+					extractValue: true,
+				}) as string;
+				const safetySettings = buildSafetySettings(
+					this.getNodeParameter('safetySettings.values', i, {}) as Record<string, unknown>,
+				);
 				const systemInstruction = this.getNodeParameter('systemInstruction', i, '') as string;
 				const stream = this.getNodeParameter('stream', i, false) as boolean;
 				const responseFormat = this.getNodeParameter('responseFormat', i, 'text') as
@@ -197,10 +206,11 @@ export class GoogleVertexGemini3 implements INodeType {
 					topP: options.topP as number | undefined,
 					topK: options.topK as number | undefined,
 					maxOutputTokens: options.maxOutputTokens as number | undefined,
-					thinkingLevel: options.thinkingLevel as string | undefined,
+					thinkingLevel,
 					includeThoughts: options.includeThoughts as boolean | undefined,
 					enableGrounding: options.enableGrounding as boolean | undefined,
 					responseSchema,
+					safetySettings,
 				});
 
 				const ai = new GoogleGenAI({

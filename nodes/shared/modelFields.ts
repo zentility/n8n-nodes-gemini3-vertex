@@ -1,13 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-// thinking_level enum values match @google/genai's ThinkingLevel enum.
-export const thinkingLevelOptions = [
-	{ name: 'Minimal', value: 'MINIMAL' },
-	{ name: 'Low', value: 'LOW' },
-	{ name: 'Medium', value: 'MEDIUM' },
-	{ name: 'High', value: 'HIGH' },
-];
-
 export const projectIdField: INodeProperties = {
 	displayName: 'Project ID',
 	name: 'projectId',
@@ -52,11 +44,24 @@ export const modelNameField: INodeProperties = {
 export const thinkingLevelField: INodeProperties = {
 	displayName: 'Thinking Level',
 	name: 'thinkingLevel',
-	type: 'options',
-	default: '',
+	type: 'resourceLocator',
+	default: { mode: 'list', value: '' },
 	description:
 		'Controls how much the model reasons before answering. Takes precedence over Thinking Budget.',
-	options: [{ name: 'Default (Unset)', value: '' }, ...thinkingLevelOptions],
+	modes: [
+		{
+			displayName: 'From List',
+			name: 'list',
+			type: 'list',
+			typeOptions: { searchListMethod: 'thinkingLevelSearch' },
+		},
+		{
+			displayName: 'Expression',
+			name: 'expression',
+			type: 'string',
+			placeholder: 'MINIMAL, LOW, MEDIUM, or HIGH',
+		},
+	],
 };
 
 export const includeThoughtsField: INodeProperties = {
