@@ -48,6 +48,22 @@ flash variants). No hardcoded model, nothing to keep updating.
   The sub-node's LangChain layer couples thought inclusion to the thinking
   budget rather than exposing a separate switch.
 
+## Gotchas with Gemini 3.x
+
+- **`includeThoughts` / `thoughtSummary`** — On Gemini 3.x, the flag is accepted
+  by Vertex (the model still thinks; you can see the token count in
+  `usageMetadata.thoughtsTokenCount`), but the response **does not include the
+  thought text** the way Gemini 1.5 / 2.x did. The action node's
+  `thoughtSummary` output field will be empty for 3.x models. Use it with 1.5 /
+  2.x if you need the readable reasoning.
+
+- **Thinking-by-default models eating your tokens.** Gemini 3.5 (and similar
+  thinking-by-default flash models) will consume your entire `maxOutputTokens`
+  on reasoning if you don't bound it. If you ask for a short answer with a
+  small token budget and get back empty text, set **Thinking Level = Minimal**
+  (or give it more tokens). This caught us in the integration tests — the same
+  trap will catch a workflow.
+
 ## Caveat: grounding & JSON output
 
 Google Search grounding and forced JSON output conflict with how n8n Agents

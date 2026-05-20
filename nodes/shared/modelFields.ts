@@ -69,5 +69,6 @@ export const includeThoughtsField: INodeProperties = {
 	name: 'includeThoughts',
 	type: 'boolean',
 	default: false,
-	description: 'Whether to request a summary of the model reasoning',
+	description:
+		'Whether to request a summary of the model reasoning. The flag is accepted by all Gemini versions, but only Gemini 1.5 / 2.x return thought text in the response — Gemini 3.x thinks (visible in token usage) without returning a readable summary, so the output thoughtSummary field will be empty.',
 };

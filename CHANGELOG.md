@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.6] - 2026-05-20
+
+### Documentation
+
+- Documented that `includeThoughts` is accepted by Gemini 3.x but the response
+  no longer carries thought text (the `thoughtSummary` output field will be
+  empty); only Gemini 1.5 / 2.x populate it. Updated the field description in
+  the n8n UI and the README "Gotchas with Gemini 3.x" section.
+- Added a README note that Gemini 3.5 thinks by default — small
+  `maxOutputTokens` with no explicit `thinkingLevel` can yield empty text;
+  set Thinking Level = Minimal or raise the budget.
+
 ## [0.2.5] - 2026-05-19
 
 ### Changed
