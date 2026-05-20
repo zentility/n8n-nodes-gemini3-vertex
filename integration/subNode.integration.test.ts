@@ -38,26 +38,36 @@ describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
 		expect((result.content as string).length).toBeGreaterThan(0);
 	});
 
-	it('sends thinkingLevel through LangChain — HIGH reasons at least as much as MINIMAL', async () => {
+	it('scales reasoning effort across all four thinking levels via LangChain', async () => {
 		const prompt =
-			'A bat and ball cost $1.10 together. The bat costs $1.00 more than the ball. How much is the ball? Show your reasoning.';
+			'A farmer needs to take a Fox, a Goose, and a Bag of Beans across a river in a small boat. ' +
+			'The boat can only hold the farmer and one item at a time. If left alone, the Fox eats the Goose, ' +
+			'and the Goose eats the Beans. How can the farmer get all three across safely?';
 
-		// maxOutputTokens big enough to leave room for output after thinking — LangChain's
-		// ChatVertexAI crashes if the response has no message content (thinking only).
-		const run = async (level: string) => {
+		const levels = ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH'] as const;
+		const results: Record<string, { reasoning: number; content: string }> = {};
+
+		// maxOutputTokens generous so thinking + answer both fit — LangChain's
+		// ChatVertexAI crashes when the response has no message content.
+		for (const level of levels) {
 			const result = await makeModel({ thinkingLevel: level, maxOutputTokens: 2048 }).invoke(
 				prompt,
 			);
 			const usage = result.usage_metadata as UsageWithReasoning | undefined;
-			return { reasoning: usage?.output_token_details?.reasoning ?? 0, usage };
-		};
+			const reasoning = usage?.output_token_details?.reasoning ?? 0;
+			const content = typeof result.content === 'string' ? result.content : '';
+			results[level] = { reasoning, content };
+			// eslint-disable-next-line no-console
+			console.log(
+				`[integration] sub-node ${level.padEnd(7)} reasoning=${String(reasoning).padStart(4)}  contentLen=${content.length}`,
+			);
+		}
 
-		const minimal = await run('MINIMAL');
-		const high = await run('HIGH');
-		// eslint-disable-next-line no-console
-		console.log(`[integration] sub-node reasoning tokens  MINIMAL=${minimal.reasoning}  HIGH=${high.reasoning}`);
-		expect(high.reasoning).toBeGreaterThan(0);
-		expect(high.reasoning).toBeGreaterThanOrEqual(minimal.reasoning);
+		for (const level of levels) {
+			expect(results[level].content.length).toBeGreaterThan(0);
+			expect(results[level].content.toLowerCase()).toContain('goose');
+		}
+		expect(results.HIGH.reasoning).toBeGreaterThan(results.MINIMAL.reasoning);
 	});
 
 	it('accepts per-category safety settings', async () => {

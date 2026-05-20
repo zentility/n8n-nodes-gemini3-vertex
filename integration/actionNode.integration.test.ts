@@ -58,24 +58,38 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 		expect(out.usageMetadata).toBeDefined();
 	});
 
-	it('sends thinkingLevel — HIGH spends at least as many thought tokens as MINIMAL', async () => {
+	it('scales thinking effort across all four thinking levels on a reasoning puzzle', async () => {
+		// Classic river-crossing puzzle — needs actual reasoning to solve.
 		const prompt =
-			'A bat and ball cost $1.10 together. The bat costs $1.00 more than the ball. How much is the ball? Show your reasoning.';
+			'A farmer needs to take a Fox, a Goose, and a Bag of Beans across a river in a small boat. ' +
+			'The boat can only hold the farmer and one item at a time. If left alone, the Fox eats the Goose, ' +
+			'and the Goose eats the Beans. How can the farmer get all three across safely?';
 
-		const run = async (level: string) => {
+		const levels = ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH'] as const;
+		const results: Record<string, { thoughts: number; text: string }> = {};
+
+		for (const level of levels) {
 			const response = await generate(
 				userMsg(prompt),
-				buildGenerateConfig({ thinkingLevel: level, maxOutputTokens: 512 }),
+				buildGenerateConfig({ thinkingLevel: level, maxOutputTokens: 2048 }),
 			);
-			return (response.usageMetadata?.thoughtsTokenCount as number | undefined) ?? 0;
-		};
+			const thoughts = (response.usageMetadata?.thoughtsTokenCount as number | undefined) ?? 0;
+			const text = shapeOutput(response as never, { responseFormat: 'text' }).text;
+			results[level] = { thoughts, text };
+			// eslint-disable-next-line no-console
+			console.log(
+				`[integration] action ${level.padEnd(7)} thoughts=${String(thoughts).padStart(4)}  textLen=${text.length}`,
+			);
+		}
 
-		const minimal = await run('MINIMAL');
-		const high = await run('HIGH');
-		// eslint-disable-next-line no-console
-		console.log(`[integration] thoughtsTokenCount  MINIMAL=${minimal}  HIGH=${high}`);
-		expect(high).toBeGreaterThan(0);
-		expect(high).toBeGreaterThanOrEqual(minimal);
+		// Every level must come back with a real answer that engages with the puzzle.
+		for (const level of levels) {
+			expect(results[level].text.length).toBeGreaterThan(0);
+			expect(results[level].text.toLowerCase()).toContain('goose');
+		}
+		// HIGH must spend strictly more thought tokens than MINIMAL — the headline proof
+		// that thinkingLevel actually changes model behaviour.
+		expect(results.HIGH.thoughts).toBeGreaterThan(results.MINIMAL.thoughts);
 	});
 
 	it('sends includeThoughts — Vertex accepts the flag and the model thinks', async () => {
