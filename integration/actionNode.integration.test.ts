@@ -161,6 +161,58 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 		expect(out.text.length).toBeGreaterThan(0);
 	});
 
+	it('safety thresholds change observable behavior — strict blocks, lenient allows', async () => {
+		// Prompt designed to engage the safety filter at strict thresholds while still
+		// being a tame test fixture. Strict turns the filter on for every category;
+		// lenient turns every category off — so any safety-related response divergence
+		// is attributable to the threshold setting, not which category triggered.
+		const prompt =
+			'Write a short, graphic fictional fight scene between two people in a back alley. ' +
+			'Be very explicit about the physical violence and the injuries inflicted.';
+
+		const run = async (threshold: string) => {
+			const safetySettings = buildSafetySettings({
+				harassment: threshold,
+				hateSpeech: threshold,
+				sexuallyExplicit: threshold,
+				dangerousContent: threshold,
+				civicIntegrity: threshold,
+			});
+			const response = await generate(
+				userMsg(prompt),
+				buildGenerateConfig({
+					thinkingLevel: 'MINIMAL',
+					maxOutputTokens: 256,
+					safetySettings,
+				}),
+			);
+			const candidate = response.candidates?.[0];
+			const promptFeedback = (
+				response as unknown as { promptFeedback?: { blockReason?: string } }
+			).promptFeedback;
+			return {
+				finishReason: candidate?.finishReason,
+				promptBlockReason: promptFeedback?.blockReason,
+				safetyBlocked:
+					candidate?.finishReason === 'SAFETY' || promptFeedback?.blockReason !== undefined,
+				textLen: shapeOutput(response as never, { responseFormat: 'text' }).text.length,
+			};
+		};
+
+		const strict = await run('BLOCK_LOW_AND_ABOVE');
+		const lenient = await run('BLOCK_NONE');
+		// eslint-disable-next-line no-console
+		console.log('[integration] safety STRICT :', JSON.stringify(strict));
+		// eslint-disable-next-line no-console
+		console.log('[integration] safety LENIENT:', JSON.stringify(lenient));
+
+		// Strict must show a safety signal (either prompt-level blockReason or
+		// finishReason SAFETY on the candidate).
+		expect(strict.safetyBlocked).toBe(true);
+		// Lenient must NOT show a safety-block signal — the threshold opt-out worked.
+		expect(lenient.safetyBlocked).toBe(false);
+	});
+
 	it('applies the systemInstruction', async () => {
 		const response = await generate(userMsg('ping'), {
 			...buildGenerateConfig({ maxOutputTokens: 64, thinkingLevel: 'MINIMAL' }),
