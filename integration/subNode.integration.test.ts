@@ -32,7 +32,7 @@ function makeModel(options: Parameters<typeof buildChatVertexConfig>[0]['options
 
 describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
 	it('builds a working model and returns a completion', async () => {
-		const model = makeModel({ maxOutputTokens: 64, temperature: 0.2 });
+		const model = makeModel({ maxOutputTokens: 128, temperature: 0.2, thinkingLevel: 'MINIMAL' });
 		const result = await model.invoke('Reply with a short greeting.');
 		expect(typeof result.content).toBe('string');
 		expect((result.content as string).length).toBeGreaterThan(0);
@@ -42,20 +42,22 @@ describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
 		const prompt =
 			'A bat and ball cost $1.10 together. The bat costs $1.00 more than the ball. How much is the ball? Show your reasoning.';
 
+		// maxOutputTokens big enough to leave room for output after thinking — LangChain's
+		// ChatVertexAI crashes if the response has no message content (thinking only).
 		const run = async (level: string) => {
-			const result = await makeModel({ thinkingLevel: level, maxOutputTokens: 512 }).invoke(
+			const result = await makeModel({ thinkingLevel: level, maxOutputTokens: 2048 }).invoke(
 				prompt,
 			);
 			const usage = result.usage_metadata as UsageWithReasoning | undefined;
-			return usage?.output_token_details?.reasoning ?? 0;
+			return { reasoning: usage?.output_token_details?.reasoning ?? 0, usage };
 		};
 
 		const minimal = await run('MINIMAL');
 		const high = await run('HIGH');
 		// eslint-disable-next-line no-console
-		console.log(`[integration] sub-node reasoning tokens  MINIMAL=${minimal}  HIGH=${high}`);
-		expect(high).toBeGreaterThan(0);
-		expect(high).toBeGreaterThanOrEqual(minimal);
+		console.log(`[integration] sub-node reasoning tokens  MINIMAL=${minimal.reasoning}  HIGH=${high.reasoning}`);
+		expect(high.reasoning).toBeGreaterThan(0);
+		expect(high.reasoning).toBeGreaterThanOrEqual(minimal.reasoning);
 	});
 
 	it('accepts per-category safety settings', async () => {
@@ -64,13 +66,13 @@ describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
 			hateSpeech: 'BLOCK_NONE',
 		});
 		expect(safetySettings).toHaveLength(2);
-		const model = makeModel({ maxOutputTokens: 64, safetySettings });
+		const model = makeModel({ maxOutputTokens: 128, thinkingLevel: 'MINIMAL', safetySettings });
 		const result = await model.invoke('Reply with a short greeting.');
 		expect((result.content as string).length).toBeGreaterThan(0);
 	});
 
 	it('streams chunks when streaming is enabled', async () => {
-		const model = makeModel({ streaming: true, maxOutputTokens: 128 });
+		const model = makeModel({ streaming: true, maxOutputTokens: 128, thinkingLevel: 'MINIMAL' });
 		const chunks: string[] = [];
 		for await (const chunk of await model.stream('Count from one to five in words.')) {
 			if (typeof chunk.content === 'string') chunks.push(chunk.content);

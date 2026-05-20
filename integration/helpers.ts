@@ -18,15 +18,45 @@ export interface IntegrationEnv {
  *
  * Returns null when no key file is configured so the suites can self-skip.
  */
+interface ServiceAccountKey {
+	client_email: string;
+	private_key: string;
+	project_id?: string;
+}
+
+function isServiceAccountKey(value: unknown): value is ServiceAccountKey {
+	return (
+		!!value &&
+		typeof value === 'object' &&
+		typeof (value as Record<string, unknown>).client_email === 'string' &&
+		typeof (value as Record<string, unknown>).private_key === 'string'
+	);
+}
+
+function readServiceAccountKey(keyFile: string): ServiceAccountKey {
+	const contents = fs.readFileSync(keyFile, 'utf8').trim();
+	const candidates: Array<() => string> = [
+		() => contents,
+		() => Buffer.from(contents, 'base64').toString('utf8'),
+	];
+	for (const decode of candidates) {
+		try {
+			const parsed: unknown = JSON.parse(decode());
+			if (isServiceAccountKey(parsed)) return parsed;
+		} catch {
+			// try the next decoding strategy
+		}
+	}
+	throw new Error(
+		`GCP_KEY_FILE does not contain a service-account JSON (or base64-encoded one): ${keyFile}`,
+	);
+}
+
 export function getIntegrationEnv(): IntegrationEnv | null {
 	const keyFile = process.env.GCP_KEY_FILE;
 	if (!keyFile || !fs.existsSync(keyFile)) return null;
 
-	const raw = JSON.parse(fs.readFileSync(keyFile, 'utf8')) as {
-		client_email: string;
-		private_key: string;
-		project_id?: string;
-	};
+	const raw = readServiceAccountKey(keyFile);
 
 	const projectId = process.env.GCP_PROJECT_ID ?? raw.project_id;
 	if (!projectId) {
