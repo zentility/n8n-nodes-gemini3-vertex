@@ -12,6 +12,14 @@
   ],
   "license": "MIT",
   "author": "craig <craig2005@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zentility/n8n-nodes-gemini3-vertex.git"
+  },
+  "homepage": "https://github.com/zentility/n8n-nodes-gemini3-vertex#readme",
+  "bugs": {
+    "url": "https://github.com/zentility/n8n-nodes-gemini3-vertex/issues"
+  },
   "main": "index.js",
   "scripts": {
     "build": "tsc && gulp build:icons",
