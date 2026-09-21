@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.7] - 2026-09-21
+
+### Fixed
+
+- The **Model** dropdown was missing models that exist in Vertex AI. The
+  publisher model list (`ai.models.list`) is incomplete — GA releases such as
+  `gemini-3-pro` and `gemini-3.5-pro` resolve via `ai.models.get` but are never
+  listed. The dropdown now probes the standard family IDs for every Gemini
+  version the list mentions and merges the ones that exist in the credential's
+  region. The merged catalogue is cached for 5 minutes per project/region.
+
 ## [0.2.6] - 2026-05-20
 
 ### Documentation

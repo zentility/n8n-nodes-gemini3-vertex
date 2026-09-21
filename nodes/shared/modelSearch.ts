@@ -26,14 +26,77 @@ function makeClient(params: VertexClientParams): GoogleGenAI {
 	});
 }
 
-async function listBaseModels(ai: GoogleGenAI): Promise<ModelLike[]> {
+/** The slice of `ai.models` the model lookup needs — narrow so tests can fake it. */
+export interface ModelsClient {
+	list(params: { config: { queryBase: boolean } }): Promise<AsyncIterable<ModelLike>>;
+	get(params: { model: string }): Promise<ModelLike>;
+}
+
+async function listBaseModels(client: ModelsClient): Promise<ModelLike[]> {
 	const models: ModelLike[] = [];
-	const pager = await ai.models.list({ config: { queryBase: true } });
+	const pager = await client.list({ config: { queryBase: true } });
 	for await (const model of pager) {
 		models.push({
 			name: model.name ?? undefined,
 			displayName: model.displayName ?? undefined,
 		});
+	}
+	return models;
+}
+
+const shortId = (model: ModelLike): string => (model.name ?? '').split('/').pop() ?? '';
+
+// Chat model families published per Gemini version.
+const PROBE_SUFFIXES = [
+	'pro',
+	'pro-preview',
+	'flash',
+	'flash-preview',
+	'flash-lite',
+	'flash-lite-preview',
+];
+
+/**
+ * Vertex's publisher model list is incomplete: some models (e.g. GA pro
+ * releases) resolve via models.get but are never returned by models.list.
+ * For every Gemini version the list does mention, this returns the standard
+ * family IDs that are absent from it, so they can be probed individually.
+ */
+export function probeCandidates(models: ModelLike[]): string[] {
+	const listed = new Set(models.map(shortId));
+	const versions = new Set<string>();
+	for (const id of listed) {
+		const match = id.toLowerCase().match(/^gemini-(\d+(?:\.\d+)?)-/);
+		if (match) versions.add(match[1]);
+	}
+	const candidates: string[] = [];
+	for (const version of versions) {
+		for (const suffix of PROBE_SUFFIXES) {
+			const id = `gemini-${version}-${suffix}`;
+			if (!listed.has(id)) candidates.push(id);
+		}
+	}
+	return candidates;
+}
+
+/**
+ * Lists base models, then appends the unlisted ones that models.get confirms
+ * exist in this region. A failed probe just means "not available here".
+ */
+export async function listModelsWithProbe(client: ModelsClient): Promise<ModelLike[]> {
+	const models = await listBaseModels(client);
+	const probed = await Promise.all(
+		probeCandidates(models).map(async (id) => {
+			try {
+				await client.get({ model: id });
+				return id;
+			} catch {
+				return undefined;
+			}
+		}),
+	);
+	for (const id of probed) {
+		if (id) models.push({ name: `publishers/google/models/${id}` });
 	}
 	return models;
 }
@@ -104,8 +167,22 @@ export function pickLatestFlash(models: ModelLike[]): string | undefined {
 export async function resolveLatestFlash(
 	params: VertexClientParams,
 ): Promise<string | undefined> {
-	const models = await listBaseModels(makeClient(params));
+	const models = await listBaseModels(makeClient(params).models);
 	return pickLatestFlash(models);
+}
+
+// The dropdown re-queries on every filter keystroke; cache the probed
+// catalogue briefly so typing doesn't fan out into dozens of GETs each time.
+const CATALOGUE_TTL_MS = 5 * 60 * 1000;
+const catalogueCache = new Map<string, { expires: number; models: ModelLike[] }>();
+
+async function cachedCatalogue(params: VertexClientParams): Promise<ModelLike[]> {
+	const key = `${params.email}|${params.projectId}|${params.region}`;
+	const hit = catalogueCache.get(key);
+	if (hit && hit.expires > Date.now()) return hit.models;
+	const models = await listModelsWithProbe(makeClient(params).models);
+	catalogueCache.set(key, { expires: Date.now() + CATALOGUE_TTL_MS, models });
+	return models;
 }
 
 export async function modelSearch(
@@ -120,6 +197,6 @@ export async function modelSearch(
 		extractValue: true,
 	}) as string;
 
-	const models = await listBaseModels(makeClient({ email, privateKey, projectId, region }));
+	const models = await cachedCatalogue({ email, privateKey, projectId, region });
 	return { results: toModelResults(models, filter) };
 }

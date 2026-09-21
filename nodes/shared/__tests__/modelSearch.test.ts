@@ -1,6 +1,54 @@
-import { pickLatestFlash, toModelResults } from '../modelSearch';
+import {
+	listModelsWithProbe,
+	pickLatestFlash,
+	probeCandidates,
+	toModelResults,
+	type ModelsClient,
+} from '../modelSearch';
 
 const m = (id: string) => ({ name: `publishers/google/models/${id}` });
+
+describe('probeCandidates', () => {
+	it('derives family IDs for every listed Gemini version, skipping listed ones', () => {
+		const candidates = probeCandidates([m('gemini-3.5-flash'), m('gemini-3-pro-preview')]);
+		expect(candidates).toContain('gemini-3.5-pro');
+		expect(candidates).toContain('gemini-3-pro');
+		expect(candidates).not.toContain('gemini-3.5-flash');
+		expect(candidates).not.toContain('gemini-3-pro-preview');
+	});
+
+	it('returns nothing when no versioned Gemini model is listed', () => {
+		expect(probeCandidates([m('imagen-3'), m('gemini-embedding-001')])).toEqual([]);
+	});
+});
+
+describe('listModelsWithProbe', () => {
+	const fakeClient = (listed: string[], gettable: string[]): ModelsClient => ({
+		list: async () =>
+			(async function* () {
+				for (const id of listed) yield m(id);
+			})(),
+		get: async ({ model }) => {
+			if (!gettable.includes(model)) throw new Error('404 not found');
+			return m(model);
+		},
+	});
+
+	// Vertex's publisher model list omits models that models.get resolves
+	// (observed live: gemini-3.5-pro is GA and gettable but never listed).
+	it('adds models that exist but are missing from the list response', async () => {
+		const models = await listModelsWithProbe(
+			fakeClient(['gemini-3.5-flash'], ['gemini-3.5-flash', 'gemini-3.5-pro']),
+		);
+		const ids = models.map((model) => model.name?.split('/').pop());
+		expect(ids).toEqual(['gemini-3.5-flash', 'gemini-3.5-pro']);
+	});
+
+	it('returns the plain list when no probe resolves', async () => {
+		const models = await listModelsWithProbe(fakeClient(['gemini-2.5-flash'], []));
+		expect(models.map((model) => model.name)).toEqual([m('gemini-2.5-flash').name]);
+	});
+});
 
 describe('pickLatestFlash', () => {
 	it('picks the highest Gemini version flash model', () => {
