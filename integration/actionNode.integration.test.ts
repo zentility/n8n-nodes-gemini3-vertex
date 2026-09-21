@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import type { GoogleGenAI } from '@google/genai';
 
 import {
 	aggregateStreamChunks,
@@ -6,14 +6,20 @@ import {
 	shapeOutput,
 } from '../nodes/GoogleVertexGemini3/operations';
 import { buildSafetySettings } from '../nodes/shared/safetySettings';
-import { getIntegrationEnv } from './helpers';
+import {
+	getIntegrationEnv,
+	makeGenAi,
+	resolveModel,
+	supportedThinkingLevels,
+	type ThinkingLevel,
+} from './helpers';
 
 const env = getIntegrationEnv();
 const describeLive = env ? describe : describe.skip;
 
 if (!env) {
 	// eslint-disable-next-line no-console
-	console.warn('[integration] GCP_KEY_FILE not set — action-node live tests skipped.');
+	console.warn('[integration] GCP_KEY_FILE / GCP_USE_ADC not set — action-node live tests skipped.');
 }
 
 const userMsg = (text: string) => [{ role: 'user', parts: [{ text }] }];
@@ -21,6 +27,9 @@ const userMsg = (text: string) => [{ role: 'user', parts: [{ text }] }];
 describeLive('action node — live Vertex AI (@google/genai)', () => {
 	let ai: GoogleGenAI;
 	let model: string;
+	// Lowest-first; `cheap` keeps the non-thinking tests fast and inexpensive.
+	let levels: ThinkingLevel[];
+	let cheap: ThinkingLevel;
 
 	// generateContent / generateContentStream are typed against the SDK's own
 	// config interface; our buildGenerateConfig output is structurally compatible
@@ -30,16 +39,11 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 	const generateStream = (contents: unknown, config: unknown) =>
 		ai.models.generateContentStream({ model, contents, config } as never);
 
-	beforeAll(() => {
-		ai = new GoogleGenAI({
-			vertexai: true,
-			project: env!.projectId,
-			location: env!.location,
-			googleAuthOptions: {
-				credentials: { client_email: env!.email, private_key: env!.privateKey },
-			},
-		});
-		model = env!.model;
+	beforeAll(async () => {
+		ai = makeGenAi(env!);
+		model = await resolveModel(env!, ai);
+		levels = await supportedThinkingLevels(ai, model);
+		cheap = levels[0];
 	});
 
 	it('accepts the sampling params and returns text', async () => {
@@ -50,7 +54,7 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 				topP: 0.8,
 				topK: 20,
 				maxOutputTokens: 128,
-				thinkingLevel: 'MINIMAL',
+				thinkingLevel: cheap,
 			}),
 		);
 		const out = shapeOutput(response as never, { responseFormat: 'text' });
@@ -58,14 +62,13 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 		expect(out.usageMetadata).toBeDefined();
 	});
 
-	it('scales thinking effort across all four thinking levels on a reasoning puzzle', async () => {
+	it('scales thinking effort across the supported thinking levels on a reasoning puzzle', async () => {
 		// Classic river-crossing puzzle — needs actual reasoning to solve.
 		const prompt =
 			'A farmer needs to take a Fox, a Goose, and a Bag of Beans across a river in a small boat. ' +
 			'The boat can only hold the farmer and one item at a time. If left alone, the Fox eats the Goose, ' +
 			'and the Goose eats the Beans. How can the farmer get all three across safely?';
 
-		const levels = ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH'] as const;
 		const results: Record<string, { thoughts: number; text: string }> = {};
 
 		for (const level of levels) {
@@ -87,9 +90,9 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 			expect(results[level].text.length).toBeGreaterThan(0);
 			expect(results[level].text.toLowerCase()).toContain('goose');
 		}
-		// HIGH must spend strictly more thought tokens than MINIMAL — the headline proof
-		// that thinkingLevel actually changes model behaviour.
-		expect(results.HIGH.thoughts).toBeGreaterThan(results.MINIMAL.thoughts);
+		// HIGH must spend strictly more thought tokens than the lowest level — the
+		// headline proof that thinkingLevel actually changes model behaviour.
+		expect(results.HIGH.thoughts).toBeGreaterThan(results[cheap].thoughts);
 	});
 
 	it('sends includeThoughts — Vertex accepts the flag and the model thinks', async () => {
@@ -119,7 +122,7 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 		// the response finishes as MAX_TOKENS before groundingMetadata is attached.
 		const response = await generate(
 			userMsg('Who won the most recent FIFA World Cup? Use search to be sure.'),
-			buildGenerateConfig({ enableGrounding: true, thinkingLevel: 'MINIMAL', maxOutputTokens: 2048 }),
+			buildGenerateConfig({ enableGrounding: true, thinkingLevel: cheap, maxOutputTokens: 2048 }),
 		);
 		const candidate = response.candidates?.[0];
 		// eslint-disable-next-line no-console
@@ -132,7 +135,7 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 			userMsg('What is the capital of France?'),
 			buildGenerateConfig({
 				maxOutputTokens: 256,
-				thinkingLevel: 'MINIMAL',
+				thinkingLevel: cheap,
 				responseSchema: {
 					type: 'object',
 					properties: { capital: { type: 'string' } },
@@ -155,7 +158,7 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 		expect(safetySettings).toHaveLength(3);
 		const response = await generate(
 			userMsg('Reply with a short, friendly greeting.'),
-			buildGenerateConfig({ maxOutputTokens: 128, thinkingLevel: 'MINIMAL', safetySettings }),
+			buildGenerateConfig({ maxOutputTokens: 128, thinkingLevel: cheap, safetySettings }),
 		);
 		const out = shapeOutput(response as never, { responseFormat: 'text' });
 		expect(out.text.length).toBeGreaterThan(0);
@@ -181,7 +184,7 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 			const response = await generate(
 				userMsg(prompt),
 				buildGenerateConfig({
-					thinkingLevel: 'MINIMAL',
+					thinkingLevel: cheap,
 					maxOutputTokens: 256,
 					safetySettings,
 				}),
@@ -215,7 +218,7 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 
 	it('applies the systemInstruction', async () => {
 		const response = await generate(userMsg('ping'), {
-			...buildGenerateConfig({ maxOutputTokens: 64, thinkingLevel: 'MINIMAL' }),
+			...buildGenerateConfig({ maxOutputTokens: 64, thinkingLevel: cheap }),
 			systemInstruction: 'Reply with exactly one word in uppercase: PONG',
 		});
 		const out = shapeOutput(response as never, { responseFormat: 'text' });
@@ -225,7 +228,7 @@ describeLive('action node — live Vertex AI (@google/genai)', () => {
 	it('streams via generateContentStream and aggregates to non-empty text', async () => {
 		const stream = await generateStream(
 			userMsg('Count from one to five in words.'),
-			buildGenerateConfig({ maxOutputTokens: 128, thinkingLevel: 'MINIMAL' }),
+			buildGenerateConfig({ maxOutputTokens: 128, thinkingLevel: cheap }),
 		);
 		const chunks = [];
 		for await (const chunk of stream) {
