@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Upgraded `@google/genai` from 2.4.0 to 2.23.0. The installed dependency tree
+  is otherwise unchanged — no new nested `gaxios` / `google-auth-library`
+  copies, so this does not reintroduce the loader problem that keeps
+  `@google-cloud/resource-manager` pinned at 5.3.1. No node behaviour changes.
+
+## [0.2.7] - 2026-09-21
+
+### Documentation
+
+- Documented that the credential's **Region** decides which models the
+  **Model** dropdown lists, and recommended `Global (multi-region) - global`.
+  Gemini 3.x is served from `global` (or the `us` / `eu` multi-regions), not
+  from most individual regions — `europe-west4` and `us-east4` list only the
+  Gemini 2.5 family and return 404 for 3.x model IDs. Added a Region table and
+  a "Models missing from the list?" note to the README, and a hint to the
+  Model field description in the n8n UI.
+- Documented that the `eu` / `us` multi-regions work with the action node only.
+  The Chat Model sub-node's pinned `@langchain/google-vertexai` 2.1.24 builds
+  the wrong hostname for them (fixed upstream in 2.3.x, which n8n does not ship
+  yet).
+
 ## [0.2.6] - 2026-05-20
 
 ### Documentation

@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-gemini3-vertex",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "n8n community nodes exposing Gemini 3 features for Google Vertex AI",
   "keywords": [
     "n8n-community-node-package",
@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@google-cloud/resource-manager": "5.3.1",
-    "@google/genai": "^2.4.0",
+    "@google/genai": "^2.23.0",
     "@langchain/google-vertexai": "2.1.24"
   },
   "devDependencies": {
