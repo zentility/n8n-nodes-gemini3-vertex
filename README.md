@@ -118,13 +118,25 @@ Google's response. It needs a GCP service-account key:
 export GCP_KEY_FILE=/absolute/path/to/service-account.json
 # optional overrides:
 export GCP_PROJECT_ID=my-project     # defaults to project_id in the key file
-export GCP_LOCATION=us-central1      # default
-export GEMINI_MODEL=gemini-3.1-pro        # default
+export GCP_LOCATION=global           # default
+export GEMINI_MODEL=gemini-3.5-flash # default: latest flash model in the catalogue
 npm run test:integration
 ```
 
-Without `GCP_KEY_FILE` the suites skip themselves, so a normal `npm test`
-never makes network calls. These tests make billable API calls.
+With `GEMINI_MODEL` unset the suites resolve the latest flash model from the
+live catalogue — the same way the nodes handle an empty **Model** field — so
+the default cannot go stale when Google retires a model ID. They also probe
+which thinking levels the model accepts: `gemini-3.7-flash` and later (and
+`gemini-3.1-pro-preview`) reject `MINIMAL`, so the tests fall back to `LOW`.
+
+No key file handy? `GCP_USE_ADC=1 GCP_PROJECT_ID=my-project npm run
+test:integration` uses your `gcloud auth application-default login` instead.
+That runs everything that talks to `@google/genai` directly (the action node
+and model listing); the Chat Model sub-node and `resolveLatestFlash` tests need
+a real service-account email + private key and skip themselves.
+
+Without `GCP_KEY_FILE` or `GCP_USE_ADC` the suites skip themselves, so a normal
+`npm test` never makes network calls. These tests make billable API calls.
 
 What is verified against the live response:
 

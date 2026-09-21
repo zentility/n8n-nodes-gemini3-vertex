@@ -18,8 +18,8 @@ set -euo pipefail
 
 # Optional overrides — uncomment and edit if needed.
 # : "${GCP_PROJECT_ID:=your-project-id}"     # defaults to project_id in the key file
-# : "${GCP_LOCATION:=us-central1}"           # default
-# : "${GEMINI_MODEL:=gemini-3.1-flash}"      # default — node also auto-picks latest flash
+# : "${GCP_LOCATION:=global}"                # default
+# : "${GEMINI_MODEL:=gemini-3.5-flash}"      # default: latest flash model in the live catalogue
 
 if [ ! -f "$GCP_KEY_FILE" ]; then
   echo "ERROR: GCP_KEY_FILE does not exist: $GCP_KEY_FILE" >&2
@@ -46,8 +46,8 @@ fi
 echo "Running live integration tests with:"
 echo "  GCP_KEY_FILE   = $GCP_KEY_FILE"
 echo "  GCP_PROJECT_ID = ${GCP_PROJECT_ID:-<from key file>}"
-echo "  GCP_LOCATION   = ${GCP_LOCATION:-us-central1}"
-echo "  GEMINI_MODEL   = ${GEMINI_MODEL:-from integration/helpers.ts default}"
+echo "  GCP_LOCATION   = ${GCP_LOCATION:-global}"
+echo "  GEMINI_MODEL   = ${GEMINI_MODEL:-<latest flash model in the live catalogue>}"
 echo
 
 npm run test:integration

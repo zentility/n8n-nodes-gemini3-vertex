@@ -2,15 +2,31 @@ import { ChatVertexAI } from '@langchain/google-vertexai';
 
 import { buildChatVertexConfig } from '../nodes/GoogleVertexChatModelG3/buildModel';
 import { buildSafetySettings } from '../nodes/shared/safetySettings';
-import { getIntegrationEnv } from './helpers';
+import {
+	getIntegrationEnv,
+	hasServiceAccount,
+	makeGenAi,
+	resolveModel,
+	supportedThinkingLevels,
+	type ServiceAccountEnv,
+	type ThinkingLevel,
+} from './helpers';
 
-const env = getIntegrationEnv();
-const describeLive = env ? describe : describe.skip;
+// ChatVertexAI is built from a service-account email + private key, exactly as
+// the sub-node does it — so these tests need GCP_KEY_FILE and skip under ADC.
+const maybeEnv = getIntegrationEnv();
+const describeLive = hasServiceAccount(maybeEnv) ? describe : describe.skip;
+const env = maybeEnv as ServiceAccountEnv;
 
-if (!env) {
+if (!hasServiceAccount(maybeEnv)) {
 	// eslint-disable-next-line no-console
 	console.warn('[integration] GCP_KEY_FILE not set — sub-node live tests skipped.');
 }
+
+let modelName: string;
+// Lowest-first; `cheap` keeps the non-thinking tests fast and inexpensive.
+let levels: ThinkingLevel[];
+let cheap: ThinkingLevel;
 
 interface UsageWithReasoning {
 	output_tokens?: number;
@@ -20,31 +36,37 @@ interface UsageWithReasoning {
 function makeModel(options: Parameters<typeof buildChatVertexConfig>[0]['options']) {
 	return new ChatVertexAI(
 		buildChatVertexConfig({
-			email: env!.email,
-			privateKey: env!.privateKey,
-			projectId: env!.projectId,
-			region: env!.location,
-			modelName: env!.model,
+			email: env.email,
+			privateKey: env.privateKey,
+			projectId: env.projectId,
+			region: env.location,
+			modelName,
 			options,
 		}),
 	);
 }
 
 describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
+	beforeAll(async () => {
+		const ai = makeGenAi(env);
+		modelName = await resolveModel(env, ai);
+		levels = await supportedThinkingLevels(ai, modelName);
+		cheap = levels[0];
+	});
+
 	it('builds a working model and returns a completion', async () => {
-		const model = makeModel({ maxOutputTokens: 128, temperature: 0.2, thinkingLevel: 'MINIMAL' });
+		const model = makeModel({ maxOutputTokens: 128, temperature: 0.2, thinkingLevel: cheap });
 		const result = await model.invoke('Reply with a short greeting.');
 		expect(typeof result.content).toBe('string');
 		expect((result.content as string).length).toBeGreaterThan(0);
 	});
 
-	it('scales reasoning effort across all four thinking levels via LangChain', async () => {
+	it('scales reasoning effort across the supported thinking levels via LangChain', async () => {
 		const prompt =
 			'A farmer needs to take a Fox, a Goose, and a Bag of Beans across a river in a small boat. ' +
 			'The boat can only hold the farmer and one item at a time. If left alone, the Fox eats the Goose, ' +
 			'and the Goose eats the Beans. How can the farmer get all three across safely?';
 
-		const levels = ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH'] as const;
 		const results: Record<string, { reasoning: number; content: string }> = {};
 
 		// maxOutputTokens generous so thinking + answer both fit — LangChain's
@@ -67,7 +89,7 @@ describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
 			expect(results[level].content.length).toBeGreaterThan(0);
 			expect(results[level].content.toLowerCase()).toContain('goose');
 		}
-		expect(results.HIGH.reasoning).toBeGreaterThan(results.MINIMAL.reasoning);
+		expect(results.HIGH.reasoning).toBeGreaterThan(results[cheap].reasoning);
 	});
 
 	it('accepts per-category safety settings', async () => {
@@ -76,13 +98,13 @@ describeLive('sub-node — live Vertex AI (ChatVertexAI / LangChain)', () => {
 			hateSpeech: 'BLOCK_NONE',
 		});
 		expect(safetySettings).toHaveLength(2);
-		const model = makeModel({ maxOutputTokens: 128, thinkingLevel: 'MINIMAL', safetySettings });
+		const model = makeModel({ maxOutputTokens: 128, thinkingLevel: cheap, safetySettings });
 		const result = await model.invoke('Reply with a short greeting.');
 		expect((result.content as string).length).toBeGreaterThan(0);
 	});
 
 	it('streams chunks when streaming is enabled', async () => {
-		const model = makeModel({ streaming: true, maxOutputTokens: 128, thinkingLevel: 'MINIMAL' });
+		const model = makeModel({ streaming: true, maxOutputTokens: 128, thinkingLevel: cheap });
 		const chunks: string[] = [];
 		for await (const chunk of await model.stream('Count from one to five in words.')) {
 			if (typeof chunk.content === 'string') chunks.push(chunk.content);

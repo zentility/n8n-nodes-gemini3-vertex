@@ -13,6 +13,23 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project follows
   copies, so this does not reintroduce the loader problem that keeps
   `@google-cloud/resource-manager` pinned at 5.3.1. No node behaviour changes.
 
+### Fixed
+
+- The live integration suite failed out of the box: its default model
+  `gemini-3.1-pro` no longer exists (404). With `GEMINI_MODEL` unset the suites
+  now resolve the latest flash model from the live catalogue, so the default
+  cannot go stale. `GCP_LOCATION` now defaults to `global`.
+- The suites no longer assume all four thinking levels. `gemini-3.7-flash` and
+  later (and `gemini-3.1-pro-preview`) reject `MINIMAL` with a 400; the tests
+  probe once and fall back to `LOW` as the lowest level.
+
+### Added
+
+- `GCP_USE_ADC=1` runs the `@google/genai` integration tests with Application
+  Default Credentials when no service-account key file is available. Tests that
+  need a service-account email + private key (Chat Model sub-node,
+  `resolveLatestFlash`) skip themselves in that mode.
+
 ## [0.2.7] - 2026-09-21
 
 ### Documentation
