@@ -27,12 +27,34 @@ In n8n: **Settings → Community Nodes → Install** and enter
 Both nodes use the built-in **Google API** credential — a GCP service account
 with the Vertex AI API enabled (email, private key, region).
 
+**Set the credential's Region to `Global (multi-region) - global`.** Region is
+the first field of the Google API credential form, above Service Account Email
+and Private Key. It decides both which models the **Model** dropdown lists and
+where requests are sent, and Gemini 3.x is served from `global` (or the `us` /
+`eu` multi-regions) rather than from individual regions:
+
+| Region            | What you get                                              |
+| ----------------- | --------------------------------------------------------- |
+| `global`          | Gemini 2.x and 3.x — recommended                          |
+| `us-central1`     | Also lists Gemini 3.x, but it is a single region          |
+| `europe-west4`, `us-east4`, most other regions | Gemini 2.5 only — 3.x model IDs return 404 |
+
+Recent n8n versions default the credential to `global`; older ones default to
+`us-central1`, and credentials created back then keep whatever region they were
+saved with. If `Global` is not in the Region list, update n8n. Note that
+`global` does not pin processing to a location — if you have data-residency
+requirements, use the `eu` or `us` multi-region instead.
+
 ## Model selection
 
 The **Model** field is a resource locator: *From List* queries the live Vertex
 AI model catalogue (`ai.models.list`, base models, filtered to Gemini) for the
 selected project and region, so it never goes stale — or switch to *ID* to type
 a model name directly.
+
+**Models missing from the list?** It is almost always the credential's region —
+the catalogue is per region, so a regional credential only shows what that
+region serves. Switch the Region to `global` (see [Credentials](#credentials)).
 
 **Leave the Model field empty** and the node auto-resolves the **latest flash
 model** at run time — it queries the live catalogue and picks the highest

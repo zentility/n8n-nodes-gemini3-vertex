@@ -24,7 +24,7 @@ export const modelNameField: INodeProperties = {
 	type: 'resourceLocator',
 	default: { mode: 'list', value: '' },
 	description:
-		'The Gemini model to use. Leave empty to auto-use the latest flash model from the live catalogue; or pick from the list / enter an ID.',
+		'The Gemini model to use. Leave empty to auto-use the latest flash model from the live catalogue; or pick from the list / enter an ID. The list depends on the credential\'s Region — set it to Global to see Gemini 3.x models.',
 	modes: [
 		{
 			displayName: 'From List',

@@ -6,14 +6,15 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 
 ## [0.2.7] - 2026-09-21
 
-### Fixed
+### Documentation
 
-- The **Model** dropdown was missing models that exist in Vertex AI. The
-  publisher model list (`ai.models.list`) is incomplete — GA releases such as
-  `gemini-3-pro` and `gemini-3.5-pro` resolve via `ai.models.get` but are never
-  listed. The dropdown now probes the standard family IDs for every Gemini
-  version the list mentions and merges the ones that exist in the credential's
-  region. The merged catalogue is cached for 5 minutes per project/region.
+- Documented that the credential's **Region** decides which models the
+  **Model** dropdown lists, and recommended `Global (multi-region) - global`.
+  Gemini 3.x is served from `global` (or the `us` / `eu` multi-regions), not
+  from most individual regions — `europe-west4` and `us-east4` list only the
+  Gemini 2.5 family and return 404 for 3.x model IDs. Added a Region table and
+  a "Models missing from the list?" note to the README, and a hint to the
+  Model field description in the n8n UI.
 
 ## [0.2.6] - 2026-05-20
 
