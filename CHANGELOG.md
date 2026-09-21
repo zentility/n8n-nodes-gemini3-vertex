@@ -15,6 +15,10 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project follows
   Gemini 2.5 family and return 404 for 3.x model IDs. Added a Region table and
   a "Models missing from the list?" note to the README, and a hint to the
   Model field description in the n8n UI.
+- Documented that the `eu` / `us` multi-regions work with the action node only.
+  The Chat Model sub-node's pinned `@langchain/google-vertexai` 2.1.24 builds
+  the wrong hostname for them (fixed upstream in 2.3.x, which n8n does not ship
+  yet).
 
 ## [0.2.6] - 2026-05-20
 

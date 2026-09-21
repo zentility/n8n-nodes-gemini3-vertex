@@ -42,9 +42,13 @@ where requests are sent, and Gemini 3.x is served from `global` (or the `us` /
 Recent n8n versions default the credential to `global`; older ones default to
 `us-central1`, and credentials created back then keep whatever region they were
 saved with. If `Global` is not in the Region list, update n8n. Note that
-`global` does not pin processing to a location — if you have data-residency
-requirements, use the `eu` or `us` multi-region instead. Those serve Gemini 3.x
-too, but list far fewer models than `global`.
+`global` does not pin processing to a location. If you have data-residency
+requirements, the `eu` and `us` multi-regions also serve Gemini 3.x (with far
+fewer models than `global`), but **only the action node supports them**. The
+Chat Model sub-node cannot use `eu` / `us` yet: the pinned
+`@langchain/google-vertexai` 2.1.24 builds `eu-aiplatform.googleapis.com`,
+while Google serves those locations from `aiplatform.eu.rep.googleapis.com`, so
+requests fail with a 404. Use `global` or a single region with the sub-node.
 
 ## Model selection
 
