@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Upgraded `@google/genai` from 2.4.0 to 2.23.0. The installed dependency tree
+  is otherwise unchanged — no new nested `gaxios` / `google-auth-library`
+  copies, so this does not reintroduce the loader problem that keeps
+  `@google-cloud/resource-manager` pinned at 5.3.1. No node behaviour changes.
+
 ## [0.2.7] - 2026-09-21
 
 ### Documentation
