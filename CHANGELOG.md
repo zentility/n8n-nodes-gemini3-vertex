@@ -4,6 +4,48 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Upgraded `@google/genai` from 2.4.0 to 2.23.0. The installed dependency tree
+  is otherwise unchanged — no new nested `gaxios` / `google-auth-library`
+  copies, so this does not reintroduce the loader problem that keeps
+  `@google-cloud/resource-manager` pinned at 5.3.1. No node behaviour changes.
+
+### Fixed
+
+- The live integration suite failed out of the box: its default model
+  `gemini-3.1-pro` no longer exists (404). With `GEMINI_MODEL` unset the suites
+  now resolve the latest flash model from the live catalogue, so the default
+  cannot go stale. `GCP_LOCATION` now defaults to `global`.
+- The suites no longer assume all four thinking levels. `gemini-3.7-flash` and
+  later (and `gemini-3.1-pro-preview`) reject `MINIMAL` with a 400; the tests
+  probe once and fall back to `LOW` as the lowest level.
+
+### Added
+
+- `GCP_USE_ADC=1` runs the `@google/genai` integration tests with Application
+  Default Credentials when no service-account key file is available. Tests that
+  need a service-account email + private key (Chat Model sub-node,
+  `resolveLatestFlash`) skip themselves in that mode.
+
+## [0.2.7] - 2026-09-21
+
+### Documentation
+
+- Documented that the credential's **Region** decides which models the
+  **Model** dropdown lists, and recommended `Global (multi-region) - global`.
+  Gemini 3.x is served from `global` (or the `us` / `eu` multi-regions), not
+  from most individual regions — `europe-west4` and `us-east4` list only the
+  Gemini 2.5 family and return 404 for 3.x model IDs. Added a Region table and
+  a "Models missing from the list?" note to the README, and a hint to the
+  Model field description in the n8n UI.
+- Documented that the `eu` / `us` multi-regions work with the action node only.
+  The Chat Model sub-node's pinned `@langchain/google-vertexai` 2.1.24 builds
+  the wrong hostname for them (fixed upstream in 2.3.x, which n8n does not ship
+  yet).
+
 ## [0.2.6] - 2026-05-20
 
 ### Documentation

@@ -27,12 +27,39 @@ In n8n: **Settings → Community Nodes → Install** and enter
 Both nodes use the built-in **Google API** credential — a GCP service account
 with the Vertex AI API enabled (email, private key, region).
 
+**Set the credential's Region to `Global (multi-region) - global`.** Region is
+the first field of the Google API credential form, above Service Account Email
+and Private Key. It decides both which models the **Model** dropdown lists and
+where requests are sent, and Gemini 3.x is served from `global` (or the `us` /
+`eu` multi-regions) rather than from individual regions:
+
+| Region            | What you get                                              |
+| ----------------- | --------------------------------------------------------- |
+| `global`          | Gemini 2.x and 3.x — recommended                          |
+| `us-central1`     | Also lists Gemini 3.x, but it is a single region          |
+| `europe-west4`, `us-east4`, most other regions | Gemini 2.5 only — 3.x model IDs return 404 |
+
+Recent n8n versions default the credential to `global`; older ones default to
+`us-central1`, and credentials created back then keep whatever region they were
+saved with. If `Global` is not in the Region list, update n8n. Note that
+`global` does not pin processing to a location. If you have data-residency
+requirements, the `eu` and `us` multi-regions also serve Gemini 3.x (with far
+fewer models than `global`), but **only the action node supports them**. The
+Chat Model sub-node cannot use `eu` / `us` yet: the pinned
+`@langchain/google-vertexai` 2.1.24 builds `eu-aiplatform.googleapis.com`,
+while Google serves those locations from `aiplatform.eu.rep.googleapis.com`, so
+requests fail with a 404. Use `global` or a single region with the sub-node.
+
 ## Model selection
 
 The **Model** field is a resource locator: *From List* queries the live Vertex
 AI model catalogue (`ai.models.list`, base models, filtered to Gemini) for the
 selected project and region, so it never goes stale — or switch to *ID* to type
 a model name directly.
+
+**Models missing from the list?** It is almost always the credential's region —
+the catalogue is per region, so a regional credential only shows what that
+region serves. Switch the Region to `global` (see [Credentials](#credentials)).
 
 **Leave the Model field empty** and the node auto-resolves the **latest flash
 model** at run time — it queries the live catalogue and picks the highest
@@ -91,13 +118,25 @@ Google's response. It needs a GCP service-account key:
 export GCP_KEY_FILE=/absolute/path/to/service-account.json
 # optional overrides:
 export GCP_PROJECT_ID=my-project     # defaults to project_id in the key file
-export GCP_LOCATION=us-central1      # default
-export GEMINI_MODEL=gemini-3.1-pro        # default
+export GCP_LOCATION=global           # default
+export GEMINI_MODEL=gemini-3.5-flash # default: latest flash model in the catalogue
 npm run test:integration
 ```
 
-Without `GCP_KEY_FILE` the suites skip themselves, so a normal `npm test`
-never makes network calls. These tests make billable API calls.
+With `GEMINI_MODEL` unset the suites resolve the latest flash model from the
+live catalogue — the same way the nodes handle an empty **Model** field — so
+the default cannot go stale when Google retires a model ID. They also probe
+which thinking levels the model accepts: `gemini-3.7-flash` and later (and
+`gemini-3.1-pro-preview`) reject `MINIMAL`, so the tests fall back to `LOW`.
+
+No key file handy? `GCP_USE_ADC=1 GCP_PROJECT_ID=my-project npm run
+test:integration` uses your `gcloud auth application-default login` instead.
+That runs everything that talks to `@google/genai` directly (the action node
+and model listing); the Chat Model sub-node and `resolveLatestFlash` tests need
+a real service-account email + private key and skip themselves.
+
+Without `GCP_KEY_FILE` or `GCP_USE_ADC` the suites skip themselves, so a normal
+`npm test` never makes network calls. These tests make billable API calls.
 
 What is verified against the live response:
 
